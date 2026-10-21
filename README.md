@@ -15,7 +15,7 @@ greenr computes inputs only. Savings are calculated in the EDGE App. It never sh
 - **Measures the EEM01 window-to-wall ratio** for eight orientations from the viewer's property database and fragment geometry, with no Design Automation. Envelope walls are found by probing the Revit Rooms on each side of every wall. Openings are matched to their wall by geometry. Frames count as glazing, as EDGE requires.
 - **Reads the Design tab inputs.** Gross internal area from rooms, floors above and below grade with EDGE's 50% rule, the area-weighted floor-to-floor height, the roof area, and the skylight share of the roof area.
 - **Lists gaps** next to their EDGE code and guide page. Glazing types with no U, SHGC or VT value go under EEM09. Roof types with no SRI go under EEM02.
-- **Asks before it decides.** Element types are classified by a rules table first, then by a decision model through the Vercel AI Gateway. Low-confidence types and proposed exclusions, such as site massing and below-grade walls, wait for a person. Values stay provisional until every pending item is confirmed.
+- **Asks before it decides.** Element types are classified by a rules table first, then by a decision model through the Vercel AI Gateway. Low-confidence types and proposed exclusions, such as site massing and below-grade walls, wait for a person. Values stay provisional until every pending item is confirmed. Every accepted or rejected exclusion and every confirmed type stays listed under **Decided** with an Undo, and the numbers recompute when you undo.
 - **Colours the model** by WWR and selects the elements behind every row and gap.
 - **Exports an evidence pack.** One PDF per measure with the entered values highlighted, a CSV that mirrors the EDGE per-orientation calculator with explicit zeros, four elevation PNGs and a JSON manifest. Versioned file names follow the auditor guide.
 - **Runs an agent in the panel.** It explores the model with the same tools, proposes exclusions, and answers questions with cards you can click.
@@ -94,6 +94,7 @@ NE, SE and NW have no façade. North is project north, since the model sets no t
 - Thresholds were tuned on one model. Check one project by hand before you trust the numbers.
 - Party walls are caught only when the neighbours are modelled.
 - Viewer screenshots support the architect's drawings. They do not replace them.
+- There is no sign-in. Decisions are stored per project, and anyone with the project URL can accept, reject or undo them for everyone (https://github.com/mrestrepoj10/greenr/issues/6).
 
 ## Roadmap
 

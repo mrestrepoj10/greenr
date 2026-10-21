@@ -34,7 +34,8 @@ export function applyExclusions(exclusions: Exclusion[], reasons?: readonly Excl
   const unconfirmed: Exclusion[] = []
   for (const exclusion of exclusions) {
     if (reasons && !reasons.includes(exclusion.reason)) continue
-    if (!exclusion.confirmed) {
+    if (exclusion.status === 'rejected') continue
+    if (exclusion.status === 'proposed') {
       unconfirmed.push(exclusion)
       continue
     }
@@ -81,7 +82,7 @@ export function proposeExclusions(snapshot: Snapshot, classifications: Classific
       dbIds: walls.map((w) => w.element.dbId),
       reason,
       source: 'rule',
-      confirmed: false,
+      status: 'proposed',
       note: `${walls.length} façade walls: ${fmt(area)} ${PORTION_NOTES[reason]}`,
     })
   }
@@ -102,7 +103,7 @@ export function proposeExclusions(snapshot: Snapshot, classifications: Classific
       dbIds: group.dbIds,
       reason: 'massing',
       source: 'rule',
-      confirmed: false,
+      status: 'proposed',
       note: `${typeKey}: ${group.dbIds.length} elements, ${fmt(group.area)} of conceptual massing or context`,
     })
   }

@@ -9,8 +9,8 @@ Persistence for runs, classifications, exclusions and evidence packs. No auth in
 | `projects` | `by_slug` | One row per model slug: URN, viewable, north angle and source. |
 | `runs` | `by_projectId_and_computedAt` | A `RunResult` without element ids. `measures[].orientations[]` and `measures[].gaps[]` carry areas and messages only. |
 | `runElements` | `by_runId` | Element id lists for a run, chunked at 8000 ids per document. Keys are `<code>:orientation:<N..NW>:wall`, `<code>:orientation:<N..NW>:glazing` and `gap:<id>`. |
-| `classifications` | `by_projectId`, `by_projectId_and_typeKey` | One row per type per project. A `user` row is never replaced by a `rule` or `model` row. |
-| `exclusions` | `by_projectId`, `by_projectId_and_id` | One row per exclusion id per project with `status: proposed, accepted, rejected`. A decided row is never replaced by a new proposal. |
+| `classifications` | `by_projectId`, `by_projectId_and_typeKey` | One row per type per project. A `user` row is never replaced by a `rule` or `model` row. `classifications.unconfirm` deletes it, so the rules or the model answer again. |
+| `exclusions` | `by_projectId`, `by_projectId_and_id` | One row per exclusion id per project with `status: proposed, accepted, rejected`. A decided row is never replaced by a new proposal. `exclusions.decide` sets the status, and setting it back to `proposed` is the undo. |
 | `packs` | `by_runId` | Blob URL, size and manifest of an exported evidence pack. |
 
 The split keeps a run under the 1 MB document limit when an orientation holds thousands of walls. `lib/persist/codec.ts` owns the conversion. `toStoredRun(run)` splits a `RunResult` into `{ run, elements, classifications, exclusions }` and `fromStoredRun(doc, elements, classifications, exclusions)` rebuilds it. `runs.latest(projectId)` returns all four in one query so one subscription rebuilds the run. `runs.elementIds(runId, key)` returns one key's ids when a view needs a single list.
@@ -19,8 +19,8 @@ The split keeps a run under the 1 MB document limit when an orientation holds th
 
 - `projects.upsert`, `projects.getBySlug`, `projects.setNorth`
 - `runs.save`, `runs.latest`, `runs.elementIds`, `runs.list` (last 10, state and computedAt)
-- `classifications.listByProject`, `classifications.confirm`, `classifications.saveMany`
-- `exclusions.listByProject`, `exclusions.decide`, `exclusions.saveProposed`
+- `classifications.listByProject`, `classifications.confirm`, `classifications.unconfirm`, `classifications.saveMany`
+- `exclusions.listByProject`, `exclusions.decide` (`status: proposed, accepted, rejected`), `exclusions.saveProposed`
 - `packs.save`, `packs.latestForRun`
 
 `runs.save` also folds the run's classifications and exclusions into the project tables with the same never-overwrite-a-user-decision rules as `saveMany` and `saveProposed`.

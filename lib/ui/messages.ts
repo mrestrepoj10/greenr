@@ -1,4 +1,4 @@
-import type { ElementRole, ExclusionReason, RunState, ValueSource } from '@/lib/edge/types'
+import type { ElementRole, ExclusionReason, ExclusionStatus, RunState, ValueSource } from '@/lib/edge/types'
 
 export const messages = {
   app: 'greenr',
@@ -40,7 +40,13 @@ export const messages = {
   storedRun: (when: string) => `Last check, ${when}. Check again to read the model afresh.`,
   provisionalNote: 'Values are provisional until every pending type is confirmed.',
   needsConfirmation: 'Needs your confirmation',
-  nothingPending: 'Nothing pending. Every type and exclusion is confirmed.',
+  nothingPending: 'Nothing pending. Every type and exclusion is decided.',
+  decided: {
+    title: 'Decided',
+    undo: 'Undo',
+    status: { proposed: 'Proposed', accepted: 'Accepted', rejected: 'Rejected' } satisfies Record<ExclusionStatus, string>,
+    confirmedAs: (role: string) => `Confirmed as ${role}`,
+  },
   pendingTypes: 'Element types',
   proposedExclusions: 'Proposed exclusions',
   confidence: 'confidence',

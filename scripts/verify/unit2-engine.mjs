@@ -88,7 +88,7 @@ try {
       const cls = v.classifySnapshot(snap).merged
       proposals = g.proposeExclusions(snap, cls)
       const t2 = performance.now()
-      run = g.computeRun(snap, cls, proposals.map((e) => ({ ...e, confirmed: true })))
+      run = g.computeRun(snap, cls, proposals.map((e) => ({ ...e, status: 'accepted' })))
       const t3 = performance.now()
       runs.push({ readSnapshotMs: t1 - t0, scanMs: snap.stats.propertyScanMs, geometryMs: snap.stats.geometryMs, proposeMs: t2 - t1, computeRunMs: t3 - t2 })
     }

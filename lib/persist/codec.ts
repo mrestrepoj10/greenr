@@ -41,16 +41,13 @@ function chunksFor(key: string, dbIds: number[]): RunElementChunk[] {
   return out
 }
 
-export function toExclusionRow(e: Exclusion): ExclusionRow {
-  const { confirmed, note, ...rest } = e
-  return { ...rest, status: confirmed ? 'accepted' : 'proposed', ...(note === undefined ? {} : { note }) }
+/** Picks the exclusion's own fields, so a Convex document's _id, _creationTime and projectId never ride along. */
+function pickExclusion({ id, dbIds, reason, source, status, note }: Exclusion | ExclusionRow): Exclusion {
+  return { id, dbIds, reason, source, status, ...(note === undefined ? {} : { note }) }
 }
 
-/** Picks the exclusion's own fields, so a Convex document's _id, _creationTime and projectId never ride along. */
-export function fromExclusionRow(row: ExclusionRow): Exclusion {
-  const { id, dbIds, reason, source, status, note } = row
-  return { id, dbIds, reason, source, confirmed: status === 'accepted', ...(note === undefined ? {} : { note }) }
-}
+export const toExclusionRow: (e: Exclusion) => ExclusionRow = pickExclusion
+export const fromExclusionRow: (row: ExclusionRow) => Exclusion = pickExclusion
 
 export function toClassificationRow(c: Classification): ClassificationRow {
   return { typeKey: c.typeKey, role: c.role, source: c.source, confidence: c.confidence, reason: c.reason }
@@ -149,7 +146,7 @@ export function fromStoredRun(
     guideVersion: doc.guideVersion,
     snapshot: doc.snapshot,
     classifications: classifications.map(fromClassificationRow),
-    exclusions: exclusions.filter((row) => row.status !== 'rejected').map(fromExclusionRow),
+    exclusions: exclusions.map(fromExclusionRow),
     measures,
     computedAt: doc.computedAt,
   }

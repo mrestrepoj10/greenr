@@ -97,7 +97,7 @@ export function edgeToolSpecs(session: EdgeSession): ToolSpec[] {
     {
       name: 'edge_run_summary',
       description:
-        'The current EDGE check: run state, north, every measure with its EDGE code, guide part and page, state and first inputs, the WWR per orientation, gap and pending counts, and every exclusion with whether the person accepted it. No element ids. Call this before you talk about any number.',
+        'The current EDGE check: run state, north, every measure with its EDGE code, guide part and page, state and first inputs, the WWR per orientation, gap and pending counts, and every exclusion with its status: proposed, accepted or rejected by the person. No element ids. Call this before you talk about any number.',
       parameters: { type: 'object', properties: {}, additionalProperties: false },
       idempotent: true,
       mutates: false,
@@ -116,7 +116,7 @@ export function edgeToolSpecs(session: EdgeSession): ToolSpec[] {
               id: e.id,
               reason: e.reason,
               source: e.source,
-              accepted: e.confirmed,
+              status: e.status,
               note: e.note ?? null,
               elements: e.dbIds.length,
             })),

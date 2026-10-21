@@ -91,15 +91,30 @@ check(
 )
 
 const exclusionId = 'excl-massing'
-await client.mutation(api.exclusions.decide, { projectId, id: exclusionId, accept: false })
+await client.mutation(api.exclusions.decide, { projectId, id: exclusionId, status: 'rejected' })
 await client.mutation(api.exclusions.saveProposed, {
   projectId,
   rows: [{ id: exclusionId, dbIds: [1], reason: 'massing', source: 'agent', status: 'proposed' }],
 })
 const exclusions = await client.query(api.exclusions.listByProject, { projectId })
 const decided = exclusions.find((e) => e.id === exclusionId)
-check(decided?.status === 'rejected', 'exclusions.decide(accept=false) sets rejected', decided?.status)
+check(decided?.status === 'rejected', 'exclusions.decide(status=rejected) sets rejected', decided?.status)
 check(decided?.dbIds.length === 12, 'saveProposed does not overwrite a decided exclusion', decided?.dbIds.length)
+await client.mutation(api.exclusions.decide, { projectId, id: exclusionId, status: 'proposed' })
+const undone = (await client.query(api.exclusions.listByProject, { projectId })).find((e) => e.id === exclusionId)
+check(undone?.status === 'proposed', 'exclusions.decide(status=proposed) undoes the rejection', undone?.status)
+
+await client.mutation(api.classifications.unconfirm, { projectId, typeKey })
+await client.mutation(api.classifications.saveMany, {
+  projectId,
+  rows: [{ typeKey, role: 'other', source: 'model', confidence: 0.6, reason: 'model answer after undo' }],
+})
+const unconfirmed = (await client.query(api.classifications.listByProject, { projectId })).filter((c) => c.typeKey === typeKey)
+check(
+  unconfirmed.length === 1 && unconfirmed[0].source === 'model',
+  'classifications.unconfirm deletes the user row, so the model answer takes its place',
+  unconfirmed.map((c) => c.source),
+)
 
 const latest = await client.query(api.runs.latest, { projectId })
 check(latest?.run._id === runDocId, 'runs.latest returns the run just saved')

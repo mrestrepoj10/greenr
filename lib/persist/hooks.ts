@@ -4,7 +4,7 @@ import { useMutation, useQuery } from 'convex/react'
 import { useCallback, useMemo } from 'react'
 import { api } from '@/convex/_generated/api'
 import type { Id } from '@/convex/_generated/dataModel'
-import type { ElementRole, NorthSource, RunResult } from '@/lib/edge/types'
+import type { ElementRole, ExclusionStatus, NorthSource, RunResult } from '@/lib/edge/types'
 import type { PackManifest } from '@/lib/export/manifest'
 import { fromClassificationRow, fromExclusionRow, fromStoredRun, toStoredRun } from './codec'
 
@@ -50,10 +50,10 @@ export function useClassifications(projectId: ProjectId | null | undefined) {
   return useMemo(() => rows?.map(fromClassificationRow), [rows])
 }
 
-/** Every exclusion row with its stored status. `confirmed` is derived; filter `status === 'rejected'` out of the proposal list. */
+/** Every exclusion row with its stored status, rejected ones included, so a later run does not propose them as new. */
 export function useExclusions(projectId: ProjectId | null | undefined) {
   const rows = useQuery(api.exclusions.listByProject, skipUnless(projectId, (id) => ({ projectId: id })))
-  return useMemo(() => rows?.map((row) => ({ ...fromExclusionRow(row), status: row.status })), [rows])
+  return useMemo(() => rows?.map(fromExclusionRow), [rows])
 }
 
 export function useUpsertProject() {
@@ -77,10 +77,16 @@ export function useConfirmType() {
   )
 }
 
+/** Unconfirming deletes the person's row, so the rules or the model answer for the type again. */
+export function useUnconfirmType() {
+  const unconfirm = useMutation(api.classifications.unconfirm)
+  return useCallback((projectId: ProjectId, typeKey: string) => unconfirm({ projectId, typeKey }), [unconfirm])
+}
+
 export function useDecideExclusion() {
   const decide = useMutation(api.exclusions.decide)
   return useCallback(
-    (projectId: ProjectId, id: string, accept: boolean) => decide({ projectId, id, accept }),
+    (projectId: ProjectId, id: string, status: ExclusionStatus) => decide({ projectId, id, status }),
     [decide],
   )
 }

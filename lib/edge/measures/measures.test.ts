@@ -52,7 +52,7 @@ describe('EEM01 arithmetic', () => {
   test('a confirmed user exclusion drops the wall and the windows it hosts', () => {
     const { snapshot: s, classifications: c, ids } = box()
     const r = MEASURES.EEM01.compute(s, c, [
-      { id: 'u1', dbIds: [ids.south.dbId], reason: 'user', source: 'user', confirmed: true },
+      { id: 'u1', dbIds: [ids.south.dbId], reason: 'user', source: 'user', status: 'accepted' },
     ])
     expect(r.orientations!.find((o) => o.orientation === 'S')!.wallAreaM2).toBe(0)
   })
@@ -175,11 +175,11 @@ describe('EEM09 and EEM02 gaps', () => {
 describe('computeRun', () => {
   test('a run waits on unconfirmed exclusions and settles once they are confirmed', () => {
     const { snapshot, classifications } = box({ wallTop: 9 })
-    const proposals = [{ id: 'rule:parapet', dbIds: [1, 2, 3], reason: 'parapet' as const, source: 'rule' as const, confirmed: false }]
+    const proposals = [{ id: 'rule:parapet', dbIds: [1, 2, 3], reason: 'parapet' as const, source: 'rule' as const, status: 'proposed' as const }]
     const first = computeRun(snapshot, classifications, proposals, undefined, 't0')
     expect(first.state).toBe('provisional')
     expect(measure(first, 'EEM01').pendingExclusionIds).toEqual(['rule:parapet'])
-    const second = computeRun(snapshot, classifications, [{ ...proposals[0], confirmed: true }], first, 't1')
+    const second = computeRun(snapshot, classifications, [{ ...proposals[0], status: 'accepted' as const }], first, 't1')
     expect(second.state).toBe('confirmed')
     expect(second.runId).toBe(first.runId)
     expect(measure(second, 'EEM01').inputs[1].value as number).toBeLessThan(measure(first, 'EEM01').inputs[1].value as number)

@@ -42,23 +42,16 @@ describe('run codec', () => {
     expect(assembleElements(shuffled).get(gapKey('gap-eem02-sri'))).toEqual([5001, 5002])
   })
 
-  it('maps exclusion confirmation onto a three-state status', () => {
-    const stored = toStoredRun({
-      ...fixtureRun,
-      exclusions: [
-        { ...fixtureRun.exclusions[0], confirmed: false },
-        { ...fixtureRun.exclusions[1], confirmed: true, note: undefined },
-      ],
-    })
-    expect(stored.exclusions.map((e) => e.status)).toEqual(['proposed', 'accepted'])
+  it('keeps every exclusion status, rejected included, through a save and a load', () => {
+    const exclusions = [
+      { ...fixtureRun.exclusions[0], status: 'proposed' as const },
+      { ...fixtureRun.exclusions[1], status: 'rejected' as const, note: undefined },
+    ]
+    const stored = toStoredRun({ ...fixtureRun, exclusions })
+    expect(stored.exclusions.map((e) => e.status)).toEqual(['proposed', 'rejected'])
     expect('note' in stored.exclusions[1]).toBe(false)
-  })
-
-  it('leaves rejected exclusions out of a rebuilt run', () => {
-    const stored = toStoredRun(fixtureRun)
-    const rows = stored.exclusions.map((row, i) => (i === 0 ? { ...row, status: 'rejected' as const } : row))
-    const rebuilt = fromStoredRun(stored.run, stored.elements, stored.classifications, rows)
-    expect(rebuilt.exclusions.map((e) => e.id)).toEqual(fixtureRun.exclusions.slice(1).map((e) => e.id))
+    const loaded = fromStoredRun(stored.run, stored.elements, stored.classifications, stored.exclusions)
+    expect(loaded.exclusions.map((e) => [e.id, e.status])).toEqual(exclusions.map((e) => [e.id, e.status]))
   })
 
   it('rebuilds a run from Convex documents that saves again without system fields', () => {

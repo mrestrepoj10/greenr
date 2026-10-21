@@ -20,6 +20,7 @@ const EXPECTED_VIEW = 'New Construction'
 const CHECK_BUDGET_MS = 60_000
 const ORDER = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
 const MEASURE_PDFS = 8
+const UNDONE = 'rule:party-wall'
 
 const b = createBrowser({ session: SESSION, bypass: process.env.VERCEL_AUTOMATION_BYPASS_SECRET })
 const { check, failures } = createChecks()
@@ -52,6 +53,12 @@ const PANEL = `JSON.stringify({
   }),
   pending: document.querySelectorAll('[data-testid=pending-type]').length,
   exclusions: [...document.querySelectorAll('[data-testid=proposed-exclusion]')].map((e) => e.dataset.exclusionId),
+  decided: {
+    open: document.querySelector('[data-testid=decided]')?.open ?? null,
+    count: Number(document.querySelector('[data-testid=decided-count]')?.textContent ?? 0),
+    exclusions: Object.fromEntries([...document.querySelectorAll('[data-testid=decided-exclusion]')].map((e) => [e.dataset.exclusionId, e.dataset.status])),
+    types: [...document.querySelectorAll('[data-testid=decided-type]')].map((e) => e.dataset.typeKey),
+  },
   inputs: [...document.querySelectorAll('[data-testid=design-input]')].map((d) => d.dataset.code + ' ' + d.querySelector('dt').textContent),
   gaps: [...document.querySelectorAll('[data-testid=gap-row]')].map((g) => ({ text: g.textContent, guide: /Part \\d p\\.\\d+/.test(g.textContent) })),
   exportDisabled: document.querySelector('[data-testid=export-pack]')?.disabled,
@@ -77,6 +84,9 @@ const AGENT = `JSON.stringify((() => {
 
 /** Real numbers from the table: a gross and a glazing area per façade row, in m². */
 const numeric = (cell) => Number((cell ?? '').replace(/,/g, ''))
+const sameRows = (a, b) => a.rows.every((r, i) => r.wwr === b.rows[i].wwr)
+const showRows = (p) => p.rows.filter((r) => r.wwr !== null).map((r) => `${r.o} ${pct(r.wwr)}%`)
+const waitState = (state) => b.waitFn(`document.querySelector("[data-testid=run-state]")?.dataset.state === "${state}"`, 30_000)
 
 mkdirSync(SHOTS_DIR, { recursive: true })
 
@@ -188,7 +198,42 @@ try {
     confirmed.rows.map((r) => `${r.o} ${pct(r.wwr)}%`),
   )
   check(confirmed.exportDisabled === false, 'Export enabled once confirmed')
+  check(
+    confirmed.decided.open === false && confirmed.decided.count === after.exclusions.length + after.pending,
+    '5. Decided lists every accepted proposal, collapsed',
+    { count: confirmed.decided.count, accepted: Object.values(confirmed.decided.exclusions).filter((s) => s === 'accepted').length },
+  )
   shot('confirm')
+
+  b.click('[data-testid=decided] > summary')
+  b.click(`[data-testid=decided-exclusion][data-exclusion-id="${UNDONE}"] [data-testid=undo-decision]`)
+  waitState('provisional')
+  const undone = b.evalJson(PANEL)
+  check(
+    undone.exclusions.includes(UNDONE) && !(UNDONE in undone.decided.exclusions),
+    `5. Undo puts ${UNDONE} back under Needs your confirmation`,
+    undone.exclusions,
+  )
+  check(!sameRows(undone, confirmed) && undone.exportDisabled === true, '5. the numbers revert and Export waits after an undo', showRows(undone))
+  shot('undo')
+
+  b.click(`[data-testid=proposed-exclusion][data-exclusion-id="${UNDONE}"] [data-testid=reject-exclusion]`)
+  waitState('confirmed')
+  const rejected = b.evalJson(PANEL)
+  check(
+    rejected.decided.exclusions[UNDONE] === 'rejected' && !rejected.exclusions.includes(UNDONE),
+    '5. a rejected exclusion is listed under Decided as rejected',
+    rejected.decided.exclusions[UNDONE],
+  )
+  check(sameRows(rejected, undone), '5. a rejected exclusion leaves its walls in the numbers', showRows(rejected))
+
+  b.click(`[data-testid=decided-exclusion][data-exclusion-id="${UNDONE}"] [data-testid=undo-decision]`)
+  waitState('provisional')
+  check(b.evalJson(PANEL).exclusions.includes(UNDONE), '5. Undo returns a rejected exclusion to proposed')
+  b.click(`[data-testid=proposed-exclusion][data-exclusion-id="${UNDONE}"] [data-testid=accept-exclusion]`)
+  waitState('confirmed')
+  const reaccepted = b.evalJson(PANEL)
+  check(sameRows(reaccepted, confirmed), '5. accepting again restores the confirmed numbers', showRows(reaccepted))
 
   b.click('[data-testid=export-pack]')
   b.waitFn('!!document.querySelector("[data-testid=export-link]") || !!document.querySelector("[data-testid=export-failed]")', 240_000)
@@ -215,10 +260,11 @@ try {
   const reloaded = b.evalJson(PANEL)
   check(reloaded.stored && reloaded.state === 'exported', '7. reload shows the last run without clicking', reloaded.state)
   check(reloaded.link === exported.link, '7. reload keeps the pack link', reloaded.link)
+  check(sameRows(reloaded, confirmed), '7. reloaded WWR matches the confirmed run', showRows(reloaded))
   check(
-    reloaded.rows.every((r, i) => r.wwr === confirmed.rows[i].wwr),
-    '7. reloaded WWR matches the confirmed run',
-    reloaded.rows.map((r) => `${r.o} ${pct(r.wwr)}%`),
+    reloaded.decided.count === confirmed.decided.count && Object.values(reloaded.decided.exclusions).every((s) => s === 'accepted'),
+    '7. reload keeps every decision under Decided',
+    reloaded.decided.count,
   )
 } catch (error) {
   check(false, 'script completed', String(error.message ?? error))

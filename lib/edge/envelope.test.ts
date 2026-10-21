@@ -39,7 +39,7 @@ describe('envelope probe on a two-storey box', () => {
     expect(parapet.dbIds).not.toContain(ids.partition.dbId)
 
     const full = rowOf(tallyFacade(snapshot, classifications, proposals).rows, 'S').opaqueWallAreaM2!
-    const clipped = rowOf(tallyFacade(snapshot, classifications, [{ ...parapet, confirmed: true }]).rows, 'S').opaqueWallAreaM2!
+    const clipped = rowOf(tallyFacade(snapshot, classifications, [{ ...parapet, status: 'accepted' }]).rows, 'S').opaqueWallAreaM2!
     expect(full).toBeCloseTo(20 * 9 - 3, 6)
     expect(clipped / full).toBeGreaterThan(0.7)
     expect(clipped / full).toBeLessThan(0.85)

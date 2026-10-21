@@ -1,7 +1,7 @@
 import { v, type Infer } from 'convex/values'
 import { mutation, query, type MutationCtx } from './_generated/server'
 import type { Id } from './_generated/dataModel'
-import { exclusionDoc, exclusionFields } from './validators'
+import { exclusionDoc, exclusionFields, exclusionStatus } from './validators'
 
 const exclusionRow = v.object(exclusionFields)
 type ExclusionRow = Infer<typeof exclusionRow>
@@ -35,13 +35,14 @@ export const listByProject = query({
   },
 })
 
+/** Accept, reject, or undo either by setting the status back to proposed. */
 export const decide = mutation({
-  args: { projectId: v.id('projects'), id: v.string(), accept: v.boolean() },
+  args: { projectId: v.id('projects'), id: v.string(), status: exclusionStatus },
   returns: v.null(),
   handler: async (ctx, args) => {
     const existing = await findRow(ctx, args.projectId, args.id)
     if (!existing) throw new Error(`404: exclusion ${args.id} not found`)
-    await ctx.db.patch(existing._id, { status: args.accept ? 'accepted' : 'rejected', updatedAt: Date.now() })
+    await ctx.db.patch(existing._id, { status: args.status, updatedAt: Date.now() })
     return null
   },
 })

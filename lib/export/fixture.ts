@@ -182,7 +182,7 @@ export const fixtureRun: RunResult = {
       dbIds: [9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008, 9009, 9010, 9011, 9012],
       reason: 'massing',
       source: 'agent',
-      confirmed: true,
+      status: 'accepted',
       note: 'Context massing of neighbouring buildings',
     },
     {
@@ -190,7 +190,7 @@ export const fixtureRun: RunResult = {
       dbIds: Array.from({ length: 86 }, (_, i) => 7001 + i),
       reason: 'below-grade',
       source: 'agent',
-      confirmed: true,
+      status: 'accepted',
       note: 'Level P1 walls, more than 50% below ground',
     },
   ],

@@ -43,13 +43,17 @@ export const EXCLUSION_REASONS = [
 ] as const
 export type ExclusionReason = (typeof EXCLUSION_REASONS)[number]
 
+/** Only an accepted exclusion changes a measure. A proposed one keeps the run provisional; a rejected one is kept so it is not proposed again. */
+export const EXCLUSION_STATUSES = ['proposed', 'accepted', 'rejected'] as const
+export type ExclusionStatus = (typeof EXCLUSION_STATUSES)[number]
+
 export type Exclusion = {
   id: string
   dbIds: number[]
   reason: ExclusionReason
-  /** Who proposed it. The agent proposes, the person confirms. */
+  /** Who proposed it. The agent proposes, the person decides. */
   source: 'rule' | 'agent' | 'user'
-  confirmed: boolean
+  status: ExclusionStatus
   note?: string
 }
 

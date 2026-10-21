@@ -56,6 +56,17 @@ export const confirm = mutation({
   },
 })
 
+/** Deletes the person's answer for a type. The next run save writes the rule or model answer in its place. */
+export const unconfirm = mutation({
+  args: { projectId: v.id('projects'), typeKey: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const existing = await findRow(ctx, args.projectId, args.typeKey)
+    if (existing?.source === 'user') await ctx.db.delete(existing._id)
+    return null
+  },
+})
+
 export const saveMany = mutation({
   args: { projectId: v.id('projects'), rows: v.array(classificationRow) },
   returns: v.null(),

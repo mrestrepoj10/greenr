@@ -110,6 +110,7 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
             colouring={{ on: colourOn && rows !== undefined, onChange: setColourOn }}
             onCheck={isModelLoaded && project ? edge.check : undefined}
             onConfirmType={edge.confirmType}
+            onUnconfirmType={edge.unconfirmType}
             onDecideExclusion={edge.decideExclusion}
             onNorthChange={edge.setNorth}
             onExport={pack.busy ? undefined : pack.exportPack}

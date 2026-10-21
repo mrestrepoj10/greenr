@@ -16,8 +16,8 @@ import { WwrTable } from '@/components/panel/wwr-table'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useViewer } from '@/components/viewer/viewer-bridge'
-import type { ElementRole, RunResult, RunState } from '@/lib/edge/types'
-import { pendingTypes } from '@/lib/run/pipeline'
+import type { ElementRole, ExclusionStatus, RunResult, RunState } from '@/lib/edge/types'
+import { decisions, pendingTypes } from '@/lib/run/pipeline'
 import { messages } from '@/lib/ui/messages'
 import { isolateDbIds } from '@/lib/viewer/color'
 
@@ -36,7 +36,10 @@ export interface EdgePanelProps {
   colouring?: { on: boolean; onChange: (on: boolean) => void }
   onCheck?: () => void
   onConfirmType?: (typeKey: string, role: ElementRole) => void
-  onDecideExclusion?: (id: string, accept: boolean) => void
+  /** Undo for a confirmed type: the rules or the model answer for it again. */
+  onUnconfirmType?: (typeKey: string) => void
+  /** Accept, reject, or undo either with `proposed`. */
+  onDecideExclusion?: (id: string, status: ExclusionStatus) => void
   onNorthChange?: (angleDeg: number) => void
   onExport?: () => void
   /** The assistant section, docked under the results. */
@@ -56,6 +59,7 @@ export function EdgePanel({
   colouring,
   onCheck,
   onConfirmType,
+  onUnconfirmType,
   onDecideExclusion,
   onNorthChange,
   onExport,
@@ -100,10 +104,12 @@ export function EdgePanel({
             <ConfirmationBlock
               pending={pending}
               exclusions={run.exclusions}
+              decided={decisions(run)}
               selectedKey={selectedKey}
               onSelect={select}
               elementsOf={elementsOf}
               onConfirmType={onConfirmType}
+              onUnconfirmType={onUnconfirmType}
               onDecideExclusion={onDecideExclusion}
             />
             {eem01?.orientations ? (

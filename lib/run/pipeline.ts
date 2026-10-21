@@ -1,15 +1,12 @@
 import { classifySnapshot, toDecisionItem, type DecisionItem } from '@/lib/classify'
 import { proposeExclusions } from '@/lib/edge/exclusions'
 import { computeRun } from '@/lib/edge/run'
-import type { Classification, ElementRole, Exclusion, RunResult, Snapshot } from '@/lib/edge/types'
-
-export type ExclusionStatus = 'proposed' | 'accepted' | 'rejected'
-export type PriorExclusion = Exclusion & { status: ExclusionStatus }
+import type { Classification, ElementRole, Exclusion, ExclusionStatus, RunResult, Snapshot } from '@/lib/edge/types'
 
 /** What the person and earlier runs already decided for this project. */
 export type Prior = {
   classifications: Classification[]
-  exclusions: PriorExclusion[]
+  exclusions: Exclusion[]
 }
 
 export type PipelinePhase = { kind: 'snapshot' } | { kind: 'classifying'; types: number } | { kind: 'measuring' }
@@ -34,23 +31,16 @@ const USER_REASON = 'Confirmed by the user'
 const AGENT_CONFIDENCE = 0.5
 
 /**
- * Rule proposals take the person's earlier decision by id: accepted ones arrive confirmed, rejected ones stay out.
- * Agent and user exclusions from earlier runs carry over unless rejected.
+ * Rule proposals take the person's earlier status by id, so a rejected one comes back rejected rather than as new.
+ * Agent and user exclusions from earlier runs carry over with their status; a rule row the rules no longer propose drops.
  */
-export function mergeExclusions(proposals: Exclusion[], prior: PriorExclusion[]): Exclusion[] {
-  const byId = new Map(prior.map((e) => [e.id, e]))
-  const merged: Exclusion[] = []
-  for (const proposal of proposals) {
-    const status = byId.get(proposal.id)?.status
-    if (status === 'rejected') continue
-    merged.push({ ...proposal, confirmed: status === 'accepted' })
-  }
+export function mergeExclusions(proposals: Exclusion[], prior: Exclusion[]): Exclusion[] {
+  const statusOf = new Map(prior.map((e) => [e.id, e.status]))
   const proposed = new Set(proposals.map((p) => p.id))
-  for (const { status, ...exclusion } of prior) {
-    if (exclusion.source === 'rule' || proposed.has(exclusion.id) || status === 'rejected') continue
-    merged.push({ ...exclusion, confirmed: status === 'accepted' })
-  }
-  return merged
+  return [
+    ...proposals.map((p) => ({ ...p, status: statusOf.get(p.id) ?? p.status })),
+    ...prior.filter((e) => e.source !== 'rule' && !proposed.has(e.id)),
+  ]
 }
 
 export function withConfirmedType(classifications: Classification[], typeKey: string, role: ElementRole): Classification[] {
@@ -70,8 +60,27 @@ export function withProposedExclusion(exclusions: Exclusion[], exclusion: Exclus
   return exclusions.some((e) => e.id === exclusion.id) ? exclusions : [...exclusions, exclusion]
 }
 
-export function withDecision(exclusions: Exclusion[], id: string, accept: boolean): Exclusion[] {
-  return accept ? exclusions.map((e) => (e.id === id ? { ...e, confirmed: true } : e)) : exclusions.filter((e) => e.id !== id)
+/** Accepting, rejecting and undoing are one move: the exclusion takes the new status. */
+export function withDecision(exclusions: Exclusion[], id: string, status: ExclusionStatus): Exclusion[] {
+  return exclusions.map((e) => (e.id === id ? { ...e, status } : e))
+}
+
+/**
+ * The answer for a type once the person's is dropped: the rules, then an earlier model answer, then the decision model.
+ * Empty when none answers, so the type waits for the person with nothing preselected.
+ */
+export async function answerWithoutUser(
+  snapshot: Snapshot,
+  classifications: Classification[],
+  typeKey: string,
+  classify: PipelineIO['classify'],
+): Promise<Classification[]> {
+  const { merged, leftovers } = classifySnapshot(snapshot, classifications.filter((c) => c.typeKey !== typeKey))
+  const settled = merged.find((c) => c.typeKey === typeKey)
+  if (settled) return [settled]
+  const group = leftovers.find((g) => g.typeKey === typeKey)
+  const answers = group ? await classify([toDecisionItem(group)]).catch(() => [] as Classification[]) : []
+  return answers.filter((a) => a.typeKey === typeKey)
 }
 
 /** Every type a measure waits on, with its current answer when it has one. */
@@ -85,7 +94,17 @@ export function pendingTypes(run: RunResult): Classification[] {
 }
 
 export function openExclusions(run: RunResult): Exclusion[] {
-  return run.exclusions.filter((e) => !e.confirmed)
+  return run.exclusions.filter((e) => e.status === 'proposed')
+}
+
+export type Decisions = { exclusions: Exclusion[]; types: Classification[] }
+
+/** What the person settled and can undo: accepted or rejected exclusions and the types they confirmed. */
+export function decisions(run: RunResult): Decisions {
+  return {
+    exclusions: run.exclusions.filter((e) => e.status !== 'proposed'),
+    types: run.classifications.filter((c) => c.source === 'user'),
+  }
 }
 
 function throwIfAborted(signal?: AbortSignal) {

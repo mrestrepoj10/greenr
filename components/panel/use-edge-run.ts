@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { groupByType } from '@/lib/classify'
 import { computeRun } from '@/lib/edge/run'
-import type { ElementRole, RunResult, RunState, Snapshot } from '@/lib/edge/types'
+import type { ElementRole, ExclusionStatus, RunResult, RunState, Snapshot } from '@/lib/edge/types'
 import {
   useClassifications,
   useConfirmType,
@@ -12,6 +12,7 @@ import {
   useLatestRun,
   useSaveRun,
   useSetNorth,
+  useUnconfirmType,
   type ProjectId,
   type RunDocId,
 } from '@/lib/persist/hooks'
@@ -19,6 +20,7 @@ import { classifyRemote } from '@/lib/run/classify-remote'
 import { agentExclusionId } from '@/lib/agent/edge-tools'
 import type { ExclusionReason } from '@/lib/edge/types'
 import {
+  answerWithoutUser,
   runPipeline,
   withConfirmedType,
   withDecision,
@@ -103,6 +105,7 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
   const priorExclusions = useExclusions(projectId)
   const saveRun = useSaveRun()
   const confirmTypeRow = useConfirmType()
+  const unconfirmTypeRow = useUnconfirmType()
   const decideExclusionRow = useDecideExclusion()
   const setNorthRow = useSetNorth()
 
@@ -217,18 +220,38 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
     [confirmTypeRow, recompute],
   )
 
-  const decideExclusion = useCallback(
-    (exclusionId: string, accept: boolean) => {
+  const unconfirmType = useCallback(
+    async (typeKey: string) => {
       const id = context.current.projectId
-      if (id) decideExclusionRow(id, exclusionId, accept).catch(() => dispatch({ type: 'failed', message: messages.errors.saveFailed }))
-      return recompute((r) => ({ classifications: r.classifications, exclusions: withDecision(r.exclusions, exclusionId, accept) }))
+      if (id) unconfirmTypeRow(id, typeKey).catch(() => dispatch({ type: 'failed', message: messages.errors.saveFailed }))
+      const base = latest.current
+      if (!base) return null
+      try {
+        const answer = await answerWithoutUser(await ensureSnapshot(), base.classifications, typeKey, (items) => classifyRemote(items))
+        return recompute((r) => ({
+          classifications: [...r.classifications.filter((c) => c.typeKey !== typeKey), ...answer],
+          exclusions: r.exclusions,
+        }))
+      } catch (error) {
+        dispatch({ type: 'failed', message: error instanceof Error ? error.message : messages.errors.checkFailed })
+        return null
+      }
+    },
+    [ensureSnapshot, recompute, unconfirmTypeRow],
+  )
+
+  const decideExclusion = useCallback(
+    (exclusionId: string, status: ExclusionStatus) => {
+      const id = context.current.projectId
+      if (id) decideExclusionRow(id, exclusionId, status).catch(() => dispatch({ type: 'failed', message: messages.errors.saveFailed }))
+      return recompute((r) => ({ classifications: r.classifications, exclusions: withDecision(r.exclusions, exclusionId, status) }))
     },
     [decideExclusionRow, recompute],
   )
 
   const proposeExclusion = useCallback(
     async ({ dbIds, reason, note }: { dbIds: number[]; reason: ExclusionReason; note: string }) => {
-      const exclusion = { id: agentExclusionId(reason, dbIds), dbIds, reason, source: 'agent' as const, confirmed: false, note }
+      const exclusion = { id: agentExclusionId(reason, dbIds), dbIds, reason, source: 'agent' as const, status: 'proposed' as const, note }
       const next = await recompute((r) => ({
         classifications: r.classifications,
         exclusions: withProposedExclusion(r.exclusions, exclusion),
@@ -293,6 +316,7 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
     error: store.error,
     check,
     confirmType,
+    unconfirmType,
     decideExclusion,
     setNorth,
     markExported,

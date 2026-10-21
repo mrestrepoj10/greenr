@@ -96,9 +96,8 @@ export function describeNorth(north: Snapshot['north']): string {
 }
 
 export function describeExclusion(exclusion: Exclusion): string {
-  const status = exclusion.confirmed ? 'confirmed' : 'proposed'
   const note = exclusion.note ? `, ${exclusion.note}` : ''
-  return `${exclusion.reason}: ${exclusion.dbIds.length} elements, ${status} (${exclusion.source})${note}`
+  return `${exclusion.reason}: ${exclusion.dbIds.length} elements, ${exclusion.status} (${exclusion.source})${note}`
 }
 
 export function buildManifest(run: RunResult, meta: PackMeta, imageLabels: string[] = []): PackManifest {

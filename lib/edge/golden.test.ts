@@ -32,7 +32,7 @@ const value = (run: RunResult, code: MeasureCode, label: string) =>
 
 describe('210 King golden snapshot', () => {
   const proposals = proposeExclusions(snapshot, classifications)
-  const confirmed = computeRun(snapshot, classifications, proposals.map((e) => ({ ...e, confirmed: true })), undefined, 't')
+  const confirmed = computeRun(snapshot, classifications, proposals.map((e) => ({ ...e, status: 'accepted' as const })), undefined, 't')
   const pending = computeRun(snapshot, classifications, proposals, undefined, 't')
   const rows = measure(confirmed, 'EEM01').orientations!
 

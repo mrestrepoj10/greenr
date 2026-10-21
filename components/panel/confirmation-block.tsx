@@ -1,31 +1,38 @@
 'use client'
 
+import { DecidedList } from '@/components/panel/decided-list'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { type Classification, ELEMENT_ROLES, type ElementRole, type Exclusion } from '@/lib/edge/types'
+import { type Classification, ELEMENT_ROLES, type ElementRole, type Exclusion, type ExclusionStatus } from '@/lib/edge/types'
+import type { Decisions } from '@/lib/run/pipeline'
 import { formatRatio } from '@/lib/ui/format'
 import { messages } from '@/lib/ui/messages'
 
 export interface ConfirmationBlockProps {
   pending: Classification[]
   exclusions: Exclusion[]
+  /** Listed under Decided, each with an Undo. */
+  decided: Decisions
   selectedKey: string | null
   onSelect: (key: string, dbIds: number[]) => void
   elementsOf: (typeKey: string) => number[]
   onConfirmType?: (typeKey: string, role: ElementRole) => void
-  onDecideExclusion?: (id: string, accept: boolean) => void
+  onUnconfirmType?: (typeKey: string) => void
+  onDecideExclusion?: (id: string, status: ExclusionStatus) => void
 }
 
 export function ConfirmationBlock({
   pending,
   exclusions,
+  decided,
   selectedKey,
   onSelect,
   elementsOf,
   onConfirmType,
+  onUnconfirmType,
   onDecideExclusion,
 }: ConfirmationBlockProps) {
-  const open = exclusions.filter((e) => !e.confirmed)
+  const open = exclusions.filter((e) => e.status === 'proposed')
   const empty = pending.length === 0 && open.length === 0
   return (
     <section className="flex flex-col gap-3 border-t px-4 py-4" data-testid="confirmation-block">
@@ -64,12 +71,21 @@ export function ConfirmationBlock({
                 exclusion={e}
                 selected={selectedKey === `excl:${e.id}`}
                 onSelect={() => onSelect(`excl:${e.id}`, e.dbIds)}
-                onDecide={onDecideExclusion ? (accept) => onDecideExclusion(e.id, accept) : undefined}
+                onDecide={onDecideExclusion ? (status) => onDecideExclusion(e.id, status) : undefined}
               />
             ))}
           </ul>
         </div>
       ) : null}
+      <DecidedList
+        exclusions={decided.exclusions}
+        types={decided.types}
+        selectedKey={selectedKey}
+        onSelect={onSelect}
+        elementsOf={elementsOf}
+        onUndoExclusion={onDecideExclusion ? (id) => onDecideExclusion(id, 'proposed') : undefined}
+        onUnconfirmType={onUnconfirmType}
+      />
     </section>
   )
 }
@@ -139,7 +155,7 @@ function ExclusionRow({
   exclusion: Exclusion
   selected: boolean
   onSelect: () => void
-  onDecide?: (accept: boolean) => void
+  onDecide?: (status: ExclusionStatus) => void
 }) {
   return (
     <li
@@ -155,10 +171,10 @@ function ExclusionRow({
         {e.note ? <span className="text-xs text-muted-foreground">{e.note}</span> : null}
       </button>
       <div className="flex items-center gap-2">
-        <Button size="xs" variant="secondary" disabled={!onDecide} onClick={() => onDecide?.(true)} data-testid="accept-exclusion">
+        <Button size="xs" variant="secondary" disabled={!onDecide} onClick={() => onDecide?.('accepted')} data-testid="accept-exclusion">
           {messages.accept}
         </Button>
-        <Button size="xs" variant="ghost" disabled={!onDecide} onClick={() => onDecide?.(false)} data-testid="reject-exclusion">
+        <Button size="xs" variant="ghost" disabled={!onDecide} onClick={() => onDecide?.('rejected')} data-testid="reject-exclusion">
           {messages.reject}
         </Button>
       </div>

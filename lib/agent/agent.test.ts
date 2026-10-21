@@ -12,7 +12,7 @@ function fakeSession() {
     run: () => fixtureRun,
     elementsOf: (typeKey) => (typeKey === 'Basic Wall / Generic - 200mm' ? [11, 12] : []),
     proposeExclusion: async ({ dbIds, reason, note }: { dbIds: number[]; reason: ExclusionReason; note: string }) => {
-      const e: Exclusion = { id: agentExclusionId(reason, dbIds), dbIds, reason, source: 'agent', confirmed: false, note }
+      const e: Exclusion = { id: agentExclusionId(reason, dbIds), dbIds, reason, source: 'agent', status: 'proposed', note }
       proposals.push(e)
       return e
     },
@@ -57,7 +57,7 @@ describe('EDGE tools', () => {
     await tool.run({ dbIds: [9, 8, 7], reason: 'massing', note: 'again' }, { signal })
     expect(proposals.map((p) => p.dbIds.length)).toEqual([3, 3])
     expect(proposals[0].id).toBe(proposals[1].id)
-    expect(proposals[0].confirmed).toBe(false)
+    expect(proposals[0].status).toBe('proposed')
   })
 
   it('refuse a role for a type the check never saw', async () => {
