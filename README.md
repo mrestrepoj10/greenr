@@ -60,7 +60,7 @@ Models are listed from the APS bucket `<client-id>-cantera-models`. The project 
 
 Every unit has a rerunnable check in `scripts/verify/`. `pnpm test` runs the engine, classification, export and persistence tests, including a golden test that reproduces the 210 King Street table.
 
-`scripts/verify/e2e.mjs` drives the deployed page with agent-browser through the full flow. It checks, confirms, answers the agent, exports, and reloads. It first resets the 210 King project through the internal `admin:resetProject` mutation, so it needs the Convex CLI signed in to the same deployment. Set `E2E_RESET=0` to skip the reset.
+`scripts/verify/e2e.mjs` drives the deployed page with agent-browser through the full flow. It checks, confirms, answers the agent, exports, and reloads. It first resets the 210 King project through the internal `admin:resetProject` mutation on the Convex deployment behind `BASE_URL`. That is production for `greenr-omega.vercel.app` or when `E2E_PROD=1`, and dev otherwise. It prints the deployment it reset, so it needs the Convex CLI signed in to this project. Set `E2E_RESET=0` to skip the reset.
 
 ```bash
 BASE_URL=https://greenr-omega.vercel.app node scripts/verify/e2e.mjs

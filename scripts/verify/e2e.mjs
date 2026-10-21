@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // The done predicate in docs/plan.md, end to end against BASE_URL.
-// Usage: BASE_URL=https://... [VERCEL_AUTOMATION_BYPASS_SECRET=...] [E2E_SKIP_AGENT=1] [E2E_RESET=0] node scripts/verify/e2e.mjs
+// Usage: BASE_URL=https://... [VERCEL_AUTOMATION_BYPASS_SECRET=...] [E2E_SKIP_AGENT=1] [E2E_RESET=0] [E2E_PROD=1] node scripts/verify/e2e.mjs
+// The reset runs on the Convex production deployment when BASE_URL is the production host or E2E_PROD=1, else on dev.
 import { execFileSync } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -12,6 +13,8 @@ const SHOTS_DIR = process.env.SHOTS_DIR ?? join(process.cwd(), '.verify-shots')
 const SESSION = process.env.AB_SESSION ?? `greenr-e2e-${process.pid}`
 const SKIP_AGENT = process.env.E2E_SKIP_AGENT === '1'
 const RESET = process.env.E2E_RESET !== '0'
+const PROD_HOST = 'greenr-omega.vercel.app'
+const PROD = process.env.E2E_PROD === '1' || new URL(BASE_URL).host === PROD_HOST
 const MODEL_NAME = '210_King_Arch.rvt'
 const EXPECTED_VIEW = 'New Construction'
 const CHECK_BUDGET_MS = 60_000
@@ -23,6 +26,10 @@ const { check, failures } = createChecks()
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const shot = (name) => b.screenshot(join(SHOTS_DIR, `e2e-${name}.png`))
 const pct = (v) => (v === null ? null : +(v * 100).toFixed(1))
+const convex = (args) =>
+  execFileSync('npx', ['convex', ...args, ...(PROD ? ['--prod'] : [])], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+const waitForModel = () =>
+  b.waitFn('!!(window.NOP_VIEWER && window.NOP_VIEWER.model && window.NOP_VIEWER.model.isLoadDone())', 240_000)
 
 const VIEWER = `(() => {
   const v = window.NOP_VIEWER
@@ -79,18 +86,16 @@ try {
   check(Boolean(model), `catalog lists ${MODEL_NAME}`, { count: catalog.models?.length })
 
   if (RESET) {
-    const out = execFileSync('npx', ['convex', 'run', 'admin:resetProject', JSON.stringify({ slug: model.slug })], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
-    console.log(`reset project: ${out.replace(/\s+/g, ' ').trim()}`)
+    const deployment = convex(['dashboard', '--no-open']).trim().split('/').pop()
+    const out = convex(['run', 'admin:resetProject', JSON.stringify({ slug: model.slug })])
+    console.log(`reset project on ${PROD ? 'prod' : 'dev'} deployment ${deployment}: ${out.replace(/\s+/g, ' ').trim()}`)
   }
 
   b.open(`${BASE_URL}/`)
   b.ab(['set', 'viewport', '1440', '900'])
   b.ab(['wait', `a[href="/p/${model.slug}"]`])
   b.click(`a[href="/p/${model.slug}"]`)
-  b.waitFn('!!(window.NOP_VIEWER && window.NOP_VIEWER.model && window.NOP_VIEWER.model.isLoadDone())', 240_000)
+  waitForModel()
   b.waitFn('!document.querySelector("[data-testid=check-edge]")?.disabled', 60_000)
   const view = b.evalJson('window.NOP_VIEWER.model.getDocumentNode().name()')
   check(view === EXPECTED_VIEW, '1. model loaded in the New Construction view', view)
@@ -205,6 +210,7 @@ try {
   shot('export')
 
   b.ab(['reload'])
+  waitForModel()
   b.waitFn('document.querySelectorAll("[data-testid=wwr-row]").length === 8', 120_000)
   const reloaded = b.evalJson(PANEL)
   check(reloaded.stored && reloaded.state === 'exported', '7. reload shows the last run without clicking', reloaded.state)
