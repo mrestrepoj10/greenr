@@ -36,7 +36,7 @@ export type Thresholds = {
   /** Two parallel walls this close and mostly overlapping are layers of one façade, counted once. */
   layerGapM: number
   layerOverlap: number
-  /** Room names that are outside the conditioned envelope. Model specific: tuned on 210 King's Patio and Roof Decks. */
+  /** Room names that are outside the conditioned envelope: 210 King's Patio and Roof Decks, and the Spanish balconies, terraces, roofs and gardens. */
   outdoorRoomName: RegExp
   storeyGridM: number
   /** Room bases closer than this are one storey. */
@@ -71,7 +71,7 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
   defaultOpeningHeightM: 4 * FT,
   layerGapM: 0.5 * FT,
   layerOverlap: 0.5,
-  outdoorRoomName: /deck|patio|terrace|balcon|porch|courtyard|exterior/i,
+  outdoorRoomName: /deck|patio|terrace|balc[oó]n|porch|courtyard|exterior|terraza|cubierta|azotea|jard[ií]n/i,
   storeyGridM: 4 * FT,
   storeyBaseRoundM: 0.5 * FT,
   slabClearanceM: 4 * FT,
