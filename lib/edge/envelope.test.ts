@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'vitest'
-import { box } from './__fixtures__/synthetic'
-import { analyzeEnvelope } from './envelope'
+import { box, classify, element, facadeAlong } from './__fixtures__/synthetic'
+import { analyzeEnvelope, finishLayers } from './envelope'
 import { proposeExclusions } from './exclusions'
 import { tallyFacade } from './measures/eem01'
+import type { Element } from './types'
 
 const rowOf = (rows: ReturnType<typeof tallyFacade>['rows'], o: string) => rows.find((r) => r.orientation === o)!
 
@@ -52,5 +53,47 @@ describe('envelope probe on a two-storey box', () => {
     expect(window.hostDbId).toBe(ids.south.dbId)
     expect(window.azimuthDeg).toBeCloseTo(180, 6)
     expect(env.openings.get(ids.glazedPanel.dbId)!.azimuthDeg).toBeCloseTo(270, 6)
+  })
+})
+
+describe('finish layers', () => {
+  const skin = (typeKey: string, a: [number, number], b: [number, number], thickness: number, top = 7) => {
+    const g = facadeAlong('wall', a, b, 0, top, thickness)
+    return element('Revit Walls', typeKey, { area: Math.hypot(b[0] - a[0], b[1] - a[1]) * top, facade: g.facade, bbox: g.bbox, params: { Function: 'Exterior' } })
+  }
+  const withSkins = (...skins: ((ids: ReturnType<typeof box>['ids']) => Element)[]) => {
+    const { snapshot, classifications, ids } = box()
+    const extra = skins.map((make) => make(ids))
+    return { snapshot: { ...snapshot, elements: [...snapshot.elements, ...extra] }, classifications: [...classifications, ...classify({ 'Basic Wall / Revoque Exterior': 'exterior-wall', 'Basic Wall / Pintura': 'exterior-wall' })], ids, extra }
+  }
+
+  test('render and paint on the south wall map to it and leave the gross façade unchanged', () => {
+    const { snapshot, classifications, ids, extra } = withSkins(
+      () => skin('Basic Wall / Revoque Exterior', [0, -0.16], [20, -0.16], 0.02),
+      () => skin('Basic Wall / Pintura', [0, -0.171], [20, -0.171], 0.002),
+    )
+    const env = analyzeEnvelope(snapshot)
+    expect([...env.finishLayers]).toEqual(extra.map((s) => [s.dbId, ids.south.dbId]))
+    for (const s of extra) expect(env.walls.has(s.dbId)).toBe(false)
+    const south = rowOf(tallyFacade(snapshot, classifications, []).rows, 'S')
+    expect(south.wallDbIds).toEqual([ids.south.dbId])
+    expect(south.wallAreaM2).toBeCloseTo(rowOf(tallyFacade(box().snapshot, box().classifications, []).rows, 'S').wallAreaM2, 9)
+  })
+
+  test('a thin wall standing off the face, or one at the thickness threshold, is not a finish layer', () => {
+    const { snapshot, extra } = withSkins(
+      () => skin('Basic Wall / Revoque Exterior', [0, -0.2], [20, -0.2], 0.02),
+      () => skin('Basic Wall / Revoque Exterior', [0, 10.175], [20, 10.175], 0.05),
+    )
+    expect(finishLayers(snapshot.elements).size).toBe(0)
+    for (const s of extra) expect(analyzeEnvelope(snapshot).walls.has(s.dbId)).toBe(true)
+  })
+
+  test('a window cut in a skin that runs past the wall behind it is hosted by that wall', () => {
+    const { snapshot, ids } = withSkins(() => skin('Basic Wall / Revoque Exterior', [20.16, -4], [20.16, 10], 0.02))
+    const g = facadeAlong('window', [20.16, -3], [20.16, -1], 1, 2.5, 0.02)
+    const window = element('Revit Windows', 'Window / W3', { width: 2, height: 1.5, facade: g.facade, bbox: g.bbox })
+    const env = analyzeEnvelope({ ...snapshot, elements: [...snapshot.elements, window] })
+    expect(env.openings.get(window.dbId)!.hostDbId).toBe(ids.east.dbId)
   })
 })

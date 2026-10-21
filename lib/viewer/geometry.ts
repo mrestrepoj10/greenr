@@ -5,7 +5,14 @@ export type Triangles = { data: Float64Array; count: number }
 
 const RES = 4
 const BINS = 360 * RES
+const HALF = BINS / 2
+const W = 3 * RES
 const hist = new Float64Array(BINS)
+/** Opposite bins summed: a wall's two faces land half a turn apart. */
+const folded = new Float64Array(HALF)
+const candidate = new Uint8Array(HALF)
+const touched = new Int32Array(BINS)
+let touchedCount = 0
 /** Faces whose normal is within this of horizontal count as wall faces. */
 const VERTICAL_NZ = 0.2
 /** Faces within this of the wall axis count as its main faces, for midplane and thickness. */
@@ -15,10 +22,17 @@ const MAIN_FACE_DOT = 0.95
  * The plan axis of a wall-like element: the best opposite pair in an area-weighted histogram of horizontal face
  * normals at 0.25 degrees, refined by a weighted mean over a ±3 degree window. A coarser 1 degree histogram turned
  * exact 90 degree walls into 87 degree walls on 210 King. Null when the element has no near-vertical faces.
+ *
+ * Only windows that hold a non-empty bin are summed. An empty window sums to 0 and never wins, so the pick is the
+ * one a full sweep makes.
  */
 export function facadeOf(kind: FacadeKind, tris: Triangles): FacadeGeometry | null {
   const d = tris.data
-  hist.fill(0)
+  for (let i = 0; i < touchedCount; i++) {
+    hist[touched[i]] = 0
+    folded[touched[i] % HALF] = 0
+  }
+  touchedCount = 0
   let verticalArea = 0
   for (let t = 0; t < tris.count; t++) {
     const o = t * 9
@@ -28,19 +42,25 @@ export function facadeOf(kind: FacadeKind, tris: Triangles): FacadeGeometry | nu
     const len = Math.hypot(nx, ny, nz)
     if (len < 1e-12 || Math.abs(nz / len) >= VERTICAL_NZ) continue
     const bin = ((Math.round(((Math.atan2(ny, nx) * 180) / Math.PI) * RES) % BINS) + BINS) % BINS
+    if (hist[bin] === 0) touched[touchedCount++] = bin
     hist[bin] += len / 2
     verticalArea += len / 2
   }
   if (verticalArea === 0) return null
 
-  const W = 3 * RES
-  const half = BINS / 2
+  for (let i = 0; i < touchedCount; i++) {
+    const j = touched[i] % HALF
+    folded[j] = hist[j] + hist[j + HALF]
+    for (let k = -W; k <= W; k++) candidate[(j + k + HALF) % HALF] = 1
+  }
   const at = (i: number) => hist[(i + BINS) % BINS]
   let best = -1
   let peak = 0
-  for (let b = 0; b < half; b++) {
+  for (let b = 0; b < HALF; b++) {
+    if (!candidate[b]) continue
+    candidate[b] = 0
     let s = 0
-    for (let k = -W; k <= W; k++) s += at(b + k) + at(b + half + k)
+    for (let k = -W; k <= W; k++) s += folded[(b + k + HALF) % HALF]
     if (s > best) {
       best = s
       peak = b
@@ -49,7 +69,7 @@ export function facadeOf(kind: FacadeKind, tris: Triangles): FacadeGeometry | nu
   let sw = 0
   let sa = 0
   for (let k = -W; k <= W; k++) {
-    const w = at(peak + k) + at(peak + half + k)
+    const w = at(peak + k) + at(peak + HALF + k)
     sw += w
     sa += w * k
   }

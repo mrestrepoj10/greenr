@@ -3,6 +3,7 @@ import { roomAt, roomIndexOf, type RoomIndex } from './rooms'
 import { DEFAULT_THRESHOLDS, type Thresholds } from './thresholds'
 import type {
   AzimuthSource,
+  Bbox,
   Element,
   FacadeGeometry,
   OpeningAreaSource,
@@ -42,7 +43,10 @@ export type OpeningProbe = {
 
 export type EnvelopeAnalysis = {
   rooms: RoomIndex
+  /** Every wall and curtain wall except finish layers. */
   walls: Map<number, WallProbe>
+  /** Finish layers, out of the gross façade: each thin wall to the wall it covers. */
+  finishLayers: Map<number, number>
   openings: Map<number, OpeningProbe>
   panelsOf: Map<number, number[]>
 }
@@ -55,14 +59,19 @@ export function analyzeEnvelope(snapshot: Snapshot, t: Thresholds = DEFAULT_THRE
     if (hit) return hit
   }
   const rooms = roomIndexOf(snapshot, t)
+  const finish = finishLayers(snapshot.elements, t)
   const walls = new Map<number, WallProbe>()
   for (const element of snapshot.elements) {
     const kind = element.facade?.kind
-    if (kind === 'wall' || kind === 'curtain-wall') walls.set(element.dbId, probeWall(element, rooms, t))
+    if ((kind === 'wall' || kind === 'curtain-wall') && !finish.has(element.dbId)) walls.set(element.dbId, probeWall(element, rooms, t))
   }
   addPartyFractions([...walls.values()], t)
 
-  const hosts = [...walls.values()].filter((w) => w.geom.kind === 'wall')
+  // A skin can carry the opening cut where the wall behind it stops, as on TORRE A's light façade.
+  const hosts: HostCandidate[] = [
+    ...[...walls.values()].filter((w) => w.geom.kind === 'wall'),
+    ...snapshot.elements.filter((e) => finish.has(e.dbId)).map((element) => ({ element, geom: element.facade! })),
+  ]
   const openings = new Map<number, OpeningProbe>()
   const panelsOf = new Map<number, number[]>()
   for (const element of snapshot.elements) {
@@ -76,10 +85,10 @@ export function analyzeEnvelope(snapshot: Snapshot, t: Thresholds = DEFAULT_THRE
         panelsOf.set(element.hostDbId, list)
       }
     } else {
-      openings.set(element.dbId, probeOpening(element, kind, hosts, walls, rooms, t))
+      openings.set(element.dbId, probeOpening(element, kind, hosts, walls, finish, rooms, t))
     }
   }
-  const analysis = { rooms, walls, openings, panelsOf }
+  const analysis = { rooms, walls, finishLayers: finish, openings, panelsOf }
   if (t === DEFAULT_THRESHOLDS) cache.set(snapshot, analysis)
   return analysis
 }
@@ -235,19 +244,94 @@ function addPartyFractions(walls: WallProbe[], t: Thresholds): void {
   }
 }
 
+const GRID_M = 2
+
+/** Elements bucketed by the `GRID_M` cells their bbox, padded by `pad`, touches. A hash collision only adds candidates. */
+function spatialGrid(elements: Element[], pad: number) {
+  const cells = new Map<number, number[]>()
+  const span = (b: Bbox, visit: (key: number) => void) => {
+    const [i0, j0, k0] = [b[0], b[1], b[2]].map((x) => Math.floor((x - pad) / GRID_M))
+    const [i1, j1, k1] = [b[3], b[4], b[5]].map((x) => Math.floor((x + pad) / GRID_M))
+    for (let i = i0; i <= i1; i++)
+      for (let j = j0; j <= j1; j++) for (let k = k0; k <= k1; k++) visit((i * 73856093) ^ (j * 19349663) ^ (k * 83492791))
+  }
+  elements.forEach((e, index) => span(e.bbox!, (key) => (cells.get(key) ?? cells.set(key, []).get(key)!).push(index)))
+  const seen = new Int32Array(elements.length).fill(-1)
+  let query = 0
+  return (b: Bbox): Element[] => {
+    const near: Element[] = []
+    const stamp = query++
+    span(b, (key) => {
+      for (const index of cells.get(key) ?? []) {
+        if (seen[index] === stamp) continue
+        seen[index] = stamp
+        near.push(elements[index])
+      }
+    })
+    return near
+  }
+}
+
+/**
+ * Render, paint, tile and board skins modelled as walls: a basic wall thinner than `minWallThicknessM` whose face
+ * lies within `finishLayerGapM` of thicker parallel walls over at least `layerOverlap` of its face. Each maps to the
+ * innermost wall of its stack: paint on render on masonry maps to the masonry. Where TORRE A's light façade has no
+ * stud core modelled, the 8 mm boards either side of the cavity stay walls and the graniplast on them is the skin.
+ */
+export function finishLayers(elements: Element[], t: Thresholds = DEFAULT_THRESHOLDS): Map<number, number> {
+  const basic = elements.filter((e) => e.facade?.kind === 'wall' && e.bbox)
+  const near = spatialGrid(basic, t.finishLayerGapM + t.minWallThicknessM)
+  const under = new Map<number, number>()
+  for (const skin of basic) {
+    if (skin.facade!.thickness >= t.minWallThicknessM) continue
+    const thicker = near(skin.bbox!).filter((w) => w.facade!.thickness > skin.facade!.thickness)
+    const wall = coveredBy(skin, thicker, t)
+    if (wall !== null) under.set(skin.dbId, wall)
+  }
+  const layers = new Map<number, number>()
+  for (const [skin, wall] of under) {
+    let root = wall
+    while (under.has(root)) root = under.get(root)!
+    layers.set(skin, root)
+  }
+  return layers
+}
+
+/** The wall a skin covers most, when parallel walls within the gap cover enough of its face together. */
+function coveredBy(skin: Element, candidates: Element[], t: Thresholds): number | null {
+  const gs = skin.facade!
+  const face = (gs.umax - gs.umin) * (gs.zmax - gs.zmin)
+  if (face <= 0) return null
+  let covered = 0
+  let best: { dbId: number; share: number } | null = null
+  for (const wall of candidates) {
+    const gw = wall.facade!
+    if (!parallel(gs, gw, t)) continue
+    if (midplaneGap(gw, gs) > (gw.thickness + gs.thickness) / 2 + t.finishLayerGapM) continue
+    const { along, up } = overlap(gs, gw)
+    if (along <= 0 || up <= 0) continue
+    const share = (along * up) / face
+    covered += share
+    if (!best || share > best.share) best = { dbId: wall.dbId, share }
+  }
+  return best && covered >= t.layerOverlap ? best.dbId : null
+}
+
 function bboxCentre(element: Element): [number, number, number] | null {
   const b = element.bbox
   return b ? [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2] : null
 }
 
+type HostCandidate = Pick<WallProbe, 'element' | 'geom'>
+
 /** Openings carry no Host property in the viewer, so the host is the nearest wall whose midplane and extent contain the opening centre. */
 export function findHost(
   centre: [number, number, number],
-  hosts: WallProbe[],
+  hosts: HostCandidate[],
   t: Thresholds,
-): { wall: WallProbe; along: number } | null {
+): { wall: HostCandidate; along: number } | null {
   const [cx, cy, cz] = centre
-  let best: { wall: WallProbe; along: number; d: number } | null = null
+  let best: { wall: HostCandidate; along: number; d: number } | null = null
   for (const wall of hosts) {
     const b = wall.element.bbox
     const s = t.hostBboxSlackM
@@ -278,8 +362,9 @@ function geometryArea(element: Element): { areaM2: number; areaSource: OpeningAr
 function probeOpening(
   element: Element,
   kind: OpeningKind,
-  hosts: WallProbe[],
+  hosts: HostCandidate[],
   walls: Map<number, WallProbe>,
+  finish: Map<number, number>,
   rooms: RoomIndex,
   t: Thresholds,
 ): OpeningProbe {
@@ -298,7 +383,7 @@ function probeOpening(
     const hw = (element.width || t.defaultOpeningWidthM) * t.openingProbeWidthShare
     const hh = (element.height || t.defaultOpeningHeightM) * t.openingProbeHeightShare
     const local = tally(hg, rooms, [host.along - hw, host.along, host.along + hw], [centre[2] - hh, centre[2] + hh], t)
-    const hostDbId = host.wall.element.dbId
+    const hostDbId = finish.get(host.wall.element.dbId) ?? host.wall.element.dbId
     if (local.sign) return { element, kind, hostDbId, azimuthDeg: outwardAzimuth(hg, local.sign), azimuthSource: 'probe-at-opening', ...area }
     const majority = walls.get(hostDbId)!.sign
     if (majority) return { element, kind, hostDbId, azimuthDeg: outwardAzimuth(hg, majority), azimuthSource: 'host-majority', ...area }

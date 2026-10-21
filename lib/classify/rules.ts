@@ -22,17 +22,29 @@ export type Rule = {
 const NAME_FIELDS = ['family', 'typeName', 'typeKey'] as const
 
 // Spanish names sit beside the English ones: Colombian models are often authored in Spanish Revit.
-const GLAZED = /glaz|glass|window|vision|vidrio|cristal|ventana/i
+const GLAZED = /glaz|glass|window|vision|acristalad|vidrio|vidriad|cristal|ventana/i
+/** Revit's "Empty" system panel, and TORRE A's "aire" panels: openings with no infill, neither glazing nor opaque façade. */
+const EMPTY_PANEL = /\baire\b|empty|vac[ií]o/i
 const SOLID = /spandrel|solid|metal|stone|wood|alumin|panel\b(?!.*glass)/i
 const SHADING = /shade|sun|louv|fin\b|brise|overhang|persiana|celos[ií]a|parasol/i
 const SKYLIGHT = /skylight|rooflight|claraboya|tragaluz/i
-const CURTAIN_FAMILY = /curtain|muro cortina|system panel|CW_/i
+const CURTAIN_FAMILY = /curtain|muro cortina|system panel|panel de sistema|CW_/i
 const MASSING = /massing|masing|\bmasa/i
 const PARAPET = /parapet|antepecho|pretil/i
 
 const ENVELOPE_CATEGORIES = /Walls|Curtain Panels|Windows|Generic Models|Roofs|Floors|Doors|Rooms|Mass$/
 // Categories outside the envelope settle as "other" by rule. Envelope types that match no rule stay leftovers for the decision model, so the regex is a negative lookahead rather than a catch-all.
 const NOT_ENVELOPE = new RegExp(`^(?!.*(?:${ENVELOPE_CATEGORIES.source}))`)
+
+const CATEGORY_ROLES: [category: RegExp, role: ElementRole, reason: string][] = [
+  [/Plumbing Fixtures/, 'plumbing-fixture', 'Revit Plumbing Fixtures category'],
+  [/Lighting Fixtures/, 'lighting-fixture', 'Revit Lighting Fixtures category'],
+  [/Mechanical Equipment|Electrical Equipment|Specialty Equipment|Electrical Fixtures/, 'equipment', 'Revit equipment or electrical fixture category'],
+  [/Parking/, 'parking', 'Revit Parking category'],
+  [/Planting/, 'planting', 'Revit Planting category'],
+  [/Areas$/, 'area', 'Revit Areas category'],
+  [/Pipes$|Piping Systems|Pipe Accessories/, 'pipe', 'Revit piping category'],
+]
 
 const named = (pattern: RegExp, rest: Rule['when'], role: ElementRole, reason: string): Rule[] =>
   NAME_FIELDS.map((field) => ({ when: { ...rest, [field]: pattern }, role, reason }))
@@ -43,6 +55,8 @@ export const RULES: Rule[] = [
   ...named(PARAPET, { category: /Walls/ }, 'parapet', 'name matches "parapet"'),
   { when: { category: /Curtain Wall Mullions/ }, role: 'other', reason: 'mullion, its area is counted inside the panel rough opening' },
   ...named(/mullion/i, { category: /Walls/ }, 'other', 'mullion, its area is counted inside the panel rough opening'),
+  ...named(EMPTY_PANEL, { category: /Curtain Panels/ }, 'other', 'empty panel'),
+  ...named(EMPTY_PANEL, { category: /Walls/, family: CURTAIN_FAMILY }, 'other', 'empty panel'),
   ...named(GLAZED, { category: /Curtain Panels/ }, 'curtain-glazed', 'curtain panel name matches glazing'),
   ...named(GLAZED, { category: /Walls/, family: CURTAIN_FAMILY }, 'curtain-glazed', 'curtain panel name matches glazing'),
   ...named(SOLID, { category: /Curtain Panels/ }, 'curtain-solid', 'curtain panel name matches an opaque panel'),
@@ -58,6 +72,7 @@ export const RULES: Rule[] = [
   { when: { category: /Floors/ }, role: 'floor', reason: 'Revit Floors category' },
   { when: { category: /Rooms/ }, role: 'room', reason: 'Revit Rooms category' },
   ...named(SHADING, { category: /Generic Models/ }, 'shading', 'generic model name matches a shading device'),
+  ...CATEGORY_ROLES.map(([category, role, reason]): Rule => ({ when: { category }, role, reason })),
   { when: { category: NOT_ENVELOPE }, role: 'other', reason: 'category outside the building envelope' },
 ]
 

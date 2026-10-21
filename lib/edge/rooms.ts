@@ -24,13 +24,25 @@ export type RoomIndex = {
   bounds: PlanBounds
 }
 
+/** Set to 1 by the snapshot reader on a room with no area and no level: Revit keeps rooms removed from plan, or never placed. */
+export const UNPLACED_PARAM = '__unplaced'
+
+const WET_ROOM = /ba[ñn]o|ducha|cocina|lavander|ropas|bath|kitchen|laundry|toilet/i
+const BEDROOM = /alcoba|habitaci[oó]n|dormitorio|cuarto|bedroom/i
+
 export function roomName(element: Element): string {
   const name = element.params.Name
   return typeof name === 'string' && name ? name : (element.family ?? '')
 }
 
+export const isWetRoomName = (name: string): boolean => WET_ROOM.test(name)
+/** A "cuarto de baño" is a bathroom, so a wet-room name is never a bedroom. */
+export const isBedroomName = (name: string): boolean => BEDROOM.test(name) && !isWetRoomName(name)
+export const isOutdoorRoomName = (name: string, t: Thresholds = DEFAULT_THRESHOLDS): boolean => t.outdoorRoomName.test(name)
+export const isUnplacedRoom = (element: Element): boolean => element.params[UNPLACED_PARAM] === 1
+
 export function isIndoorRoom(element: Element, t: Thresholds): boolean {
-  return element.footprint !== undefined && !t.outdoorRoomName.test(roomName(element))
+  return element.footprint !== undefined && !isOutdoorRoomName(roomName(element), t)
 }
 
 const cache = new WeakMap<Snapshot, RoomIndex>()

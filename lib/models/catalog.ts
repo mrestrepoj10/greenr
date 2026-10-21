@@ -5,8 +5,8 @@ import type { BucketModel, TranslationStatus, Viewable } from '@/lib/models/type
 const MODEL_EXTENSIONS = ['.rvt', '.ifc', '.nwd']
 const ISSUED_OBJECT_KEY = /^(?:[0-9a-f-]{36}|bimscripts)--(.+)$/i
 const STATUSES: readonly TranslationStatus[] = ['pending', 'inprogress', 'success', 'failed']
-
-export const PREFERRED_VIEW_NAME = 'New Construction'
+/** Revit's default "New Construction" phase in the languages Revit ships, compared without case or accents. */
+const NEW_CONSTRUCTION = /new construction|nueva construccion|nova construcao|nuova costruzione|neubau|nouvelle construction/
 
 export function isModelFile(objectKey: string): boolean {
   const lower = objectKey.toLowerCase()
@@ -50,19 +50,26 @@ export function viewablesOf(manifest: Manifest | null): Viewable[] {
   return walk(manifest?.derivatives, [])
 }
 
-/** Ranked preference for which 3D viewable to open. The master view is the
- * Revit view that carries Rooms, which the default `{3D}` view drops. */
-const VIEWABLE_PREFERENCE: readonly ((v: Viewable) => boolean)[] = [
-  (v) => v.name.toLowerCase() === PREFERRED_VIEW_NAME.toLowerCase(),
-  (v) => v.isMasterView,
-  (v) => v.name === '{3D}',
-  () => true,
+const folded = (name: string) => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
+const isNewConstruction = (v: Viewable) => NEW_CONSTRUCTION.test(folded(v.name))
+
+/**
+ * Ranked preference for which 3D viewable to open. Revit writes one master view per phase, and only master views
+ * carry Rooms, which the default `{3D}` view drops. The new-construction phase is the one to measure; failing a
+ * name match, the last master view is the latest phase.
+ */
+const VIEWABLE_PREFERENCE: readonly ((threeD: Viewable[]) => Viewable | undefined)[] = [
+  (vs) => vs.find((v) => v.isMasterView && isNewConstruction(v)),
+  (vs) => vs.find(isNewConstruction),
+  (vs) => vs.findLast((v) => v.isMasterView),
+  (vs) => vs.find((v) => v.name === '{3D}'),
+  (vs) => vs[0],
 ]
 
 export function preferredViewable(viewables: Viewable[]): Viewable | undefined {
   const threeD = viewables.filter((v) => v.role === '3d')
   for (const rule of VIEWABLE_PREFERENCE) {
-    const hit = threeD.find(rule)
+    const hit = rule(threeD)
     if (hit) return hit
   }
   return undefined

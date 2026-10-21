@@ -75,6 +75,29 @@ describe('classifyByRule', () => {
   })
 })
 
+describe('building services and site categories', () => {
+  const cases: [category: string, role: ElementRole][] = [
+    ['Revit Plumbing Fixtures', 'plumbing-fixture'],
+    ['Revit Lighting Fixtures', 'lighting-fixture'],
+    ['Revit Mechanical Equipment', 'equipment'],
+    ['Revit Electrical Equipment', 'equipment'],
+    ['Revit Specialty Equipment', 'equipment'],
+    ['Revit Electrical Fixtures', 'equipment'],
+    ['Revit Parking', 'parking'],
+    ['Revit Planting', 'planting'],
+    ['Revit Areas', 'area'],
+    ['Revit Pipes', 'pipe'],
+    ['Revit Piping Systems', 'pipe'],
+    ['Revit Pipe Accessories', 'pipe'],
+    ['Revit Pipe Fittings', 'other'],
+    ['Revit Lighting Devices', 'other'],
+  ]
+  test.each(cases)('%s -> %s', (category, role) => {
+    const element: Element = { dbId: 1, typeKey: 'MezcladorDucha / Tipo 1', category, family: 'MezcladorDucha', typeName: 'Tipo 1', params: {} }
+    expect(classifyByRule([element])?.role).toBe(role)
+  })
+})
+
 describe('groupByType', () => {
   test('groups the two exterior wall rows under one type with both dbIds', () => {
     const group = groups.get('Basic Wall / Exterior - Brick on Block')!
@@ -103,6 +126,9 @@ describe('Spanish Revit names', () => {
     [spanish('Revit Curtain Panels', 'Panel de sistema', 'Vidrio templado'), 'curtain-glazed'],
     [spanish('Revit Curtain Panels', 'Panel de sistema', 'Acristalado'), 'curtain-glazed'],
     [spanish('Revit Curtain Panels', 'Panel de ventana', 'Proyectante'), 'curtain-glazed'],
+    [spanish('Revit Curtain Panels', 'Panel de sistema', 'Vidriado'), 'curtain-glazed'],
+    [spanish('Revit Walls', 'Panel de sistema', 'Acristalado'), 'curtain-glazed'],
+    [spanish('Revit Doors', 'Puerta corrediza con dos hojas', 'Vidrio 2.40', { Function: 'Interior' }), 'door'],
     [spanish('Revit Walls', 'Muro cortina', 'Fachada Cristal'), 'curtain-glazed'],
     [spanish('Revit Walls', 'Muro cortina', 'Panel aluminio compuesto'), 'curtain-solid'],
     [spanish('Revit Windows', 'Claraboya', 'Fija 900 x 900'), 'skylight'],
@@ -121,6 +147,21 @@ describe('Spanish Revit names', () => {
 
   test.each(cases.map(([element, role]) => [element.typeKey, role, element] as const))('%s -> %s', (_, role, element) => {
     expect(roleOf(element)).toBe(role)
+  })
+
+  test.each([
+    ['Revit Curtain Panels', 'Panel de sistema', 'aire'],
+    ['Revit Curtain Panels', 'Panel de sistema', 'Vacío'],
+    ['Revit Curtain Panels', 'System Panel', 'Empty'],
+    ['Revit Walls', 'Muro cortina', 'Panel vacio'],
+  ])('%s %s / %s is an empty panel: no glazing and no opaque façade', (category, family, typeName) => {
+    const result = classifyByRule([spanish(category, family, typeName)])
+    expect(result?.role).toBe('other')
+    expect(result?.reason).toBe('empty panel')
+  })
+
+  test('"aire" needs word edges, so a glazed panel named after a brand is still glazing', () => {
+    expect(roleOf(spanish('Revit Curtain Panels', 'Panel de sistema', 'Vidrio Airelux'))).toBe('curtain-glazed')
   })
 
   test('a Spanish wall with no Function and no telling name stays a leftover', () => {
