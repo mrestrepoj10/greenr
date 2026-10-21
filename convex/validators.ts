@@ -209,6 +209,12 @@ export const projectFields = {
   northSource,
 }
 
+/** What the person chose for the project: the schemes every check measures and the inputs CASA reads. */
+export const projectScopeFields = {
+  schemes: v.array(scheme),
+  inputs: projectInputs,
+}
+
 export const runDoc = v.object({
   _id: v.id('runs'),
   _creationTime: v.number(),
@@ -245,6 +251,7 @@ export const projectDoc = v.object({
   createdAt: v.number(),
   updatedAt: v.number(),
   ...projectFields,
+  ...projectScopeFields,
 })
 
 export const packDoc = v.object({

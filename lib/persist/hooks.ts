@@ -4,14 +4,15 @@ import { useMutation, useQuery } from 'convex/react'
 import { useCallback, useMemo } from 'react'
 import { api } from '@/convex/_generated/api'
 import type { Id } from '@/convex/_generated/dataModel'
-import type { ElementRole, ExclusionStatus, NorthSource, RunResult } from '@/lib/edge/types'
+import type { ElementRole, ExclusionStatus, NorthSource, ProjectInputs, RunResult, Scheme } from '@/lib/edge/types'
 import type { PackManifest } from '@/lib/export/manifest'
 import { fromClassificationRow, fromExclusionRow, fromStoredRun, toStoredRun } from './codec'
 
 export type ProjectId = Id<'projects'>
 export type RunDocId = Id<'runs'>
 
-export type ProjectInput = {
+/** What identifies a project's model. The schemes and inputs the person picks are set separately and never overwritten here. */
+export type ProjectIdentity = {
   slug: string
   modelUrn: string
   modelName: string
@@ -58,7 +59,7 @@ export function useExclusions(projectId: ProjectId | null | undefined) {
 
 export function useUpsertProject() {
   const upsert = useMutation(api.projects.upsert)
-  return useCallback((project: ProjectInput) => upsert(project), [upsert])
+  return useCallback((project: ProjectIdentity) => upsert(project), [upsert])
 }
 
 export function useSaveRun() {
@@ -98,6 +99,25 @@ export function useSetNorth() {
       setNorth({ projectId, northAngleDeg, northSource }),
     [setNorth],
   )
+}
+
+/** The selection shows at once: the project query takes it before the server confirms. */
+export function useSetSchemes() {
+  const setSchemes = useMutation(api.projects.setSchemes).withOptimisticUpdate((store, { projectId, schemes }) => {
+    for (const { args, value } of store.getAllQueries(api.projects.getBySlug)) {
+      if (value?._id === projectId) store.setQuery(api.projects.getBySlug, args, { ...value, schemes })
+    }
+  })
+  return useCallback((projectId: ProjectId, schemes: Scheme[]) => setSchemes({ projectId, schemes }), [setSchemes])
+}
+
+export function useSetInputs() {
+  const setInputs = useMutation(api.projects.setInputs).withOptimisticUpdate((store, { projectId, inputs }) => {
+    for (const { args, value } of store.getAllQueries(api.projects.getBySlug)) {
+      if (value?._id === projectId) store.setQuery(api.projects.getBySlug, args, { ...value, inputs })
+    }
+  })
+  return useCallback((projectId: ProjectId, inputs: ProjectInputs) => setInputs({ projectId, inputs }), [setInputs])
 }
 
 export function useSavePack() {

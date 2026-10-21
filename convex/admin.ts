@@ -8,12 +8,18 @@ type LegacyRun = Omit<Doc<'runs'>, 'schemes' | 'guides' | 'inputs' | 'measures'>
   measures: (Omit<Doc<'runs'>['measures'][number], 'guide'> & { guide: LegacyGuide })[]
 }
 
-/** One-off move of runs saved before schemes: EDGE only, no inputs, guide part N as the document "EDGE Part N".
- * Runs while the schema is not enforced; a run already in the new shape is left alone, so it can run twice. */
+/** One-off move of projects and runs saved before schemes: EDGE only, no inputs, guide part N as the document
+ * "EDGE Part N". Runs while the schema is not enforced; a document already in the new shape is left alone, so it can run twice. */
 export const migrateToSchemes = internalMutation({
   args: {},
-  returns: v.object({ runs: v.number() }),
+  returns: v.object({ projects: v.number(), runs: v.number() }),
   handler: async (ctx) => {
+    let projects = 0
+    for (const project of await ctx.db.query('projects').collect()) {
+      if (project.schemes !== undefined && project.inputs !== undefined) continue
+      await ctx.db.patch(project._id, { schemes: project.schemes ?? ['EDGE'], inputs: project.inputs ?? {} })
+      projects++
+    }
     let runs = 0
     for (const doc of await ctx.db.query('runs').collect()) {
       if (!('guideVersion' in doc)) continue
@@ -32,11 +38,12 @@ export const migrateToSchemes = internalMutation({
       })
       runs++
     }
-    return { runs }
+    return { projects, runs }
   },
 })
 
-/** Deletes one project's runs, element chunks, packs, classifications and exclusions, so a verify run starts clean.
+/** Deletes one project's runs, element chunks, packs, classifications and exclusions and puts it back to EDGE only with
+ * no inputs, so a verify run starts clean.
  * Internal: only the deployment's CLI can call it (`npx convex run admin:resetProject`). */
 export const resetProject = internalMutation({
   args: { slug: v.string() },
@@ -74,7 +81,7 @@ export const resetProject = internalMutation({
       .withIndex('by_projectId', (q) => q.eq('projectId', project._id))
       .collect()
     for (const row of exclusions) await ctx.db.delete(row._id)
-    await ctx.db.patch(project._id, { northAngleDeg: 0, northSource: 'project', updatedAt: Date.now() })
+    await ctx.db.patch(project._id, { northAngleDeg: 0, northSource: 'project', schemes: ['EDGE'], inputs: {}, updatedAt: Date.now() })
     return { runs: runs.length, classifications: classifications.length, exclusions: exclusions.length }
   },
 })

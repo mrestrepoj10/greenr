@@ -1,14 +1,15 @@
 #!/usr/bin/env node
-// Unit 7 check: the Convex functions persist a project, a run with its element
+// Unit 7 check: the Convex functions persist a project with its schemes and inputs, a run with its element
 // ids split into runElements, user classifications that win over rules, and an
 // exclusion decision, all against the dev deployment in NEXT_PUBLIC_CONVEX_URL.
 // Usage: node --import tsx scripts/verify/unit7-convex.mjs
+import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '../../convex/_generated/api.js'
-import { fixtureRun } from '../../lib/export/fixture.ts'
+import { fixtureBothRun, fixtureRun } from '../../lib/export/fixture.ts'
 import { fromStoredRun, orientationKey, toStoredRun } from '../../lib/persist/codec.ts'
 
 function loadEnvLocal() {
@@ -36,6 +37,7 @@ function check(ok, label, detail) {
 
 const SLUG = 'verify-210king'
 const started = Date.now()
+execFileSync('npx', ['convex', 'run', 'admin:resetProject', JSON.stringify({ slug: SLUG })], { stdio: 'ignore' })
 
 const projectId = await client.mutation(api.projects.upsert, {
   slug: SLUG,
@@ -59,11 +61,47 @@ check(again === projectId, 'projects.upsert returns the same id for the same slu
 const project = await client.query(api.projects.getBySlug, { slug: SLUG })
 check(project?.northAngleDeg === 12.5 && project.northSource === 'user', 'projects.getBySlug reflects the upsert')
 
+check(
+  isDeepStrictEqual(project?.schemes, ['EDGE']) && isDeepStrictEqual(project?.inputs, {}),
+  'a reset project measures EDGE only and has no inputs',
+  project && { schemes: project.schemes, inputs: project.inputs },
+)
+await client.mutation(api.projects.setSchemes, { projectId, schemes: ['CASA', 'EDGE', 'CASA'] })
+await client.mutation(api.projects.setInputs, {
+  projectId,
+  inputs: { typology: 'vis', climateZone: 'templado', municipality: ' 05001 ', roadGradeM: 1502.4, floodReturnYears: 50 },
+})
+const scoped = await client.query(api.projects.getBySlug, { slug: SLUG })
+check(isDeepStrictEqual(scoped?.schemes, ['EDGE', 'CASA']), 'projects.setSchemes stores scheme order without repeats', scoped?.schemes)
+check(
+  isDeepStrictEqual(scoped?.inputs, { typology: 'vis', climateZone: 'templado', municipality: '05001', roadGradeM: 1502.4, floodReturnYears: 50 }),
+  'projects.setInputs stores the inputs, municipality trimmed',
+  scoped?.inputs,
+)
+const rejects = async (fn) => fn().then(() => false, () => true)
+check(await rejects(() => client.mutation(api.projects.setSchemes, { projectId, schemes: [] })), 'projects.setSchemes refuses an empty selection')
+check(
+  await rejects(() => client.mutation(api.projects.setInputs, { projectId, inputs: { projectAreaM2: -5 } })),
+  'projects.setInputs refuses a negative project area',
+)
+await client.mutation(api.projects.setInputs, { projectId, inputs: { climateZone: 'frio' } })
+check(isDeepStrictEqual((await client.query(api.projects.getBySlug, { slug: SLUG }))?.inputs, { climateZone: 'frio' }), 'projects.setInputs replaces, a cleared field is gone')
+await client.mutation(api.projects.upsert, {
+  slug: SLUG,
+  modelUrn: fixtureRun.snapshot.modelUrn,
+  modelName: '210_King_Arch.rvt',
+  viewableName: fixtureRun.snapshot.viewableName,
+  viewableGuid: fixtureRun.snapshot.viewableGuid,
+  northAngleDeg: 12.5,
+  northSource: 'user',
+})
+check(isDeepStrictEqual((await client.query(api.projects.getBySlug, { slug: SLUG }))?.schemes, ['EDGE', 'CASA']), 'projects.upsert keeps the schemes the person chose')
+
 await client.mutation(api.projects.setNorth, { projectId, northAngleDeg: 370, northSource: 'user' })
 const northed = await client.query(api.projects.getBySlug, { slug: SLUG })
 check(northed?.northAngleDeg === 10, 'projects.setNorth normalises to 0..360', northed?.northAngleDeg)
 
-const run = { ...fixtureRun, runId: `verify-${Date.now()}`, computedAt: new Date().toISOString() }
+const run = { ...fixtureBothRun, runId: `verify-${Date.now()}`, computedAt: new Date().toISOString() }
 const bundle = toStoredRun(run)
 const runDocId = await client.mutation(api.runs.save, { projectId, ...bundle })
 check(typeof runDocId === 'string', 'runs.save returns a run id', runDocId)
@@ -127,8 +165,12 @@ check(
   'orientation dbIds round-trip through runElements',
 )
 check(
-  isDeepStrictEqual(rebuilt.measures, fixtureRun.measures),
-  'measures, gaps and inputs round-trip (key order ignored)',
+  isDeepStrictEqual(rebuilt.measures, fixtureBothRun.measures),
+  'EDGE and CASA measures, gaps, inputs and blockers round-trip (key order ignored)',
+)
+check(
+  isDeepStrictEqual([rebuilt.schemes, rebuilt.guides, rebuilt.inputs], [fixtureBothRun.schemes, fixtureBothRun.guides, fixtureBothRun.inputs]),
+  'the run keeps its schemes, guide versions and project inputs',
 )
 const northIds = await client.query(api.runs.elementIds, { runId: runDocId, key: orientationKey('EEM01', 'N', 'wall') })
 check(JSON.stringify(northIds) === JSON.stringify([1201, 1202, 1203, 1204]), 'runs.elementIds returns one key', northIds)

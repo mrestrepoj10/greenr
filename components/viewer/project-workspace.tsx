@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { DevTerminal, useDevHook, useDevMode } from '@/components/agent/dev-terminal'
 import { EdgeAgentSection, useGreenrTools } from '@/components/agent/edge-agent'
@@ -13,7 +13,7 @@ import { ProjectViewer } from '@/components/viewer/project-viewer'
 import { StageLegend } from '@/components/viewer/stage-legend'
 import { useViewer, ViewerBridgeProvider } from '@/components/viewer/viewer-bridge'
 import { DEFAULT_SCOPE } from '@/lib/edge/run'
-import type { OrientationRow } from '@/lib/edge/types'
+import type { OrientationRow, RunScope } from '@/lib/edge/types'
 import type { BucketModel } from '@/lib/models/types'
 import { useProject, useUpsertProject } from '@/lib/persist/hooks'
 import { messages } from '@/lib/ui/messages'
@@ -54,11 +54,15 @@ function useProjectRow(model: BucketModel, viewableName: string | undefined) {
 function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
   const { viewer, getViewer, isModelLoaded } = useViewer()
   const project = useProjectRow(model, viewableName)
+  const scope = useMemo<RunScope>(
+    () => (project ? { schemes: project.schemes, inputs: project.inputs } : DEFAULT_SCOPE),
+    [project],
+  )
   const edge = useEdgeRun({
     projectId: project?._id ?? null,
     getViewer,
     userNorth: project?.northSource === 'user' ? project.northAngleDeg : undefined,
-    scope: DEFAULT_SCOPE,
+    scope,
   })
   const run = edge.run
   // Every new run starts coloured; the person turns colouring off per run.

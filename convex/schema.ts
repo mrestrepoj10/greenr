@@ -1,10 +1,11 @@
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
-import { classificationFields, exclusionFields, projectFields, runElementFields, runFields } from './validators'
+import { classificationFields, exclusionFields, projectFields, projectScopeFields, runElementFields, runFields } from './validators'
 
 export default defineSchema({
   projects: defineTable({
     ...projectFields,
+    ...projectScopeFields,
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index('by_slug', ['slug']),
