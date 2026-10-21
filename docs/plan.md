@@ -78,3 +78,16 @@ Units 2, 3 and 6 are disjoint directories and run in parallel worktrees after un
 ## Decision trail
 
 `.audit/greenr.tsv`, committed. One row per unit result, pivot, or revert.
+
+## Phase 2: CASA Colombia 3.1
+
+Done when, on production, a project can run the CASA scheme and gets: the envelope sheet for four façades and the MS&C form fields, the flood and road-grade check, natural ventilation and daylight per dwelling unit, fixture flows against NTC 1500, the non-structural partition share, CASA gaps with page citations, a CASA-named evidence pack with the MS&C CSV, and an agent that cites CASA pages. The e2e runs on a Spanish housing model (TORRE A) from the bucket. Research: `docs/casa-research.md`.
+
+| # | Unit | Check |
+|---|------|-------|
+| 0 | Spike: TORRE A in the viewer (Spanish parameter names, rooms, unit key, plumbing fixtures, window operable area) | RESULT.md with field inventory and a verdict per CASA measure |
+| 1 | Scheme architecture: `scheme` on the measures registry, generalised `GuideRef`, project inputs, export strings parameterised, Spanish classification patterns | tests green, EDGE e2e unchanged |
+| 2 | Snapshot reader: plumbing, lighting, equipment, parking, door width, window operable, wall Structural, roof Slope, room unit key | fixture from TORRE A, counts measured |
+| 3 | CASA measures C-ENV, C-FLOOD, C-VENT, C-WATER, C-FLEX and CASA gaps | unit tests plus golden on TORRE A |
+| 4 | Panel, agent and export for CASA: scheme switch, inputs form, 4-façade compass, flood plane, CASA pack | agent-browser checks |
+| 5 | e2e on TORRE A, README, demo, production, trail review | e2e VERIFIED on production |
