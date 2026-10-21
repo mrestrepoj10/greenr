@@ -1,5 +1,6 @@
 import { SRI_PARAMS } from '@/lib/edge/measures/eem02'
 import { GLAZING_PARAMS } from '@/lib/edge/measures/eem09'
+import { UNPLACED_PARAM } from '@/lib/edge/rooms'
 import type { Element, FacadeKind, Level, Snapshot, Units } from '@/lib/edge/types'
 import { createGeometryReader, facadeOf, footprintOf, type ViewerModelGeometry } from './geometry'
 
@@ -22,11 +23,56 @@ const CATEGORIES: Record<string, Role> = {
   'Revit Project Base Point': 'base-point',
   'Revit Generic Models': 'other',
   'Revit Mass': 'other',
+  'Revit Plumbing Fixtures': 'other',
+  'Revit Lighting Fixtures': 'other',
+  'Revit Mechanical Equipment': 'other',
+  'Revit Electrical Fixtures': 'other',
+  'Revit Electrical Equipment': 'other',
+  'Revit Specialty Equipment': 'other',
+  'Revit Parking': 'other',
+  'Revit Planting': 'other',
+  'Revit Areas': 'other',
+  'Revit Pipes': 'other',
+  'Revit Pipe Accessories': 'other',
 }
 
-const LENGTH_PARAMS = ['Length', 'Width', 'Height', 'Rough Width', 'Rough Height', 'Base Offset', 'Elevation']
+const LENGTH_PARAMS = ['Length', 'Width', 'Height', 'Rough Width', 'Rough Height', 'Base Offset', 'Elevation', 'Unconnected Height']
 const AREA_PARAMS = ['Area']
-const KEPT_PARAMS = ['Function', 'Name', 'Rough Width', 'Rough Height', ...Object.values(GLAZING_PARAMS), ...SRI_PARAMS]
+/** Copied into `Element.params`. Type Name, Level, Area, Length, Width and Height become Element fields instead. */
+const KEPT_PARAMS = [
+  ...new Set([
+    'Function',
+    'Name',
+    'Rough Width',
+    'Rough Height',
+    ...Object.values(GLAZING_PARAMS),
+    'Thermal Transmittance (U)',
+    ...SRI_PARAMS,
+    'Comments',
+    'Type Comments',
+    'Mark',
+    'Number',
+    'Department',
+    'Occupancy',
+    'Occupant',
+    'Structural',
+    'Structural Usage',
+    'Slope',
+    'Operable',
+    'Flow',
+    'Flow Rate',
+    'Caudal',
+    'Flush',
+    'Pressure',
+    'Wattage',
+    'Apparent Load',
+    'System Type',
+    'System Classification',
+    'Base Offset',
+    'Elevation',
+    'Unconnected Height',
+  ]),
+]
 const PROPS = [
   ...new Set([
     'Type Name',
@@ -37,14 +83,15 @@ const PROPS = [
     'Length',
     'Width',
     'Height',
-    'Base Offset',
-    'Elevation',
     'Angle to True North',
     ...KEPT_PARAMS,
   ]),
 ]
 
-/** Forge unit ids to the factor that turns them into SI: metres, m², W/m²K, m²K/W. Version suffixes are stripped. */
+/**
+ * Forge unit ids to the factor that turns them into the units a snapshot reports: metres, m², W/m²K, m²K/W, and for
+ * services L/min and L (the units of the CASA water caps), kPa, W and VA. Version suffixes are stripped.
+ */
 const UNIT_FACTORS: Record<string, number> = {
   feet: 0.3048,
   feetFractionalInches: 0.3048,
@@ -65,11 +112,32 @@ const UNIT_FACTORS: Record<string, number> = {
   hourSquareFootDegreesFahrenheitPerBritishThermalUnit: 0.1761102,
   squareMeterKelvinsPerWatt: 1,
   degrees: 1,
+  litersPerMinute: 1,
+  litersPerSecond: 60,
+  litersPerHour: 1 / 60,
+  cubicMetersPerSecond: 60000,
+  cubicMetersPerHour: 1000 / 60,
+  usGallonsPerMinute: 3.785411784,
+  usGallonsPerHour: 3.785411784 / 60,
+  cubicFeetPerMinute: 28.316846592,
+  liters: 1,
+  cubicMeters: 1000,
+  usGallons: 3.785411784,
+  kilopascals: 1,
+  pascals: 0.001,
+  megapascals: 1000,
+  bars: 100,
+  poundsForcePerSquareInch: 6.894757293168,
+  watts: 1,
+  kilowatts: 1000,
+  voltAmperes: 1,
+  kilovoltAmperes: 1000,
 }
 
 /**
  * Runs inside the property database worker, so it travels as source text: a string keeps bundlers from rewriting it
- * with helpers the worker cannot see.
+ * with helpers the worker cannot see. One pass over the objects. Enumeration stops at the Category of an object
+ * outside CATEGORIES, and each type is read once.
  */
 const PROPERTY_SCAN = `function (pdb, ud) {
   var catAttr = -1, typeAttr = -1, nameAttr = -1, keep = {}, factor = {};
@@ -85,10 +153,13 @@ const PROPERTY_SCAN = `function (pdb, ud) {
         : ud.areas.indexOf(d.name) >= 0 ? ud.scale * ud.scale : 1;
     }
   });
-  function read(id) {
+  function read(id, wanted) {
     var o = { p: {} };
     pdb.enumObjectProperties(id, function (a, v) {
-      if (a === catAttr) o.cat = pdb.getAttrValue(a, v);
+      if (a === catAttr) {
+        o.cat = pdb.getAttrValue(a, v);
+        if (wanted && !ud.cats[o.cat]) return true;
+      }
       else if (a === typeAttr) o.typeId = pdb.getAttrValue(a, v);
       else if (a === nameAttr) o.name = pdb.getAttrValue(a, v);
       else if (keep[a] !== undefined && o.p[keep[a]] === undefined) {
@@ -98,15 +169,16 @@ const PROPERTY_SCAN = `function (pdb, ud) {
     });
     return o;
   }
+  var types = {};
   var out = [];
   pdb.enumObjects(function (id) {
-    var o = read(id);
+    var o = read(id, true);
     if (!ud.cats[o.cat]) return;
     var typed = false;
     if (o.typeId) {
       typed = true;
-      var t = read(o.typeId);
-      for (var k in t.p) if (o.p[k] === undefined) o.p[k] = t.p[k];
+      var t = types[o.typeId] || (types[o.typeId] = read(o.typeId, false).p);
+      for (var k in t) if (o.p[k] === undefined) o.p[k] = t[k];
     }
     out.push({ dbId: id, category: o.cat, name: o.name, typed: typed, p: o.p });
   });
@@ -129,6 +201,8 @@ const ROOM_FLOOR_TOL_M = 0.01524
 
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)
 const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v : undefined)
+/** A room with no area and no level is in no plan. Most such rooms have no fragments, so they are kept without them, for the flag. */
+const isUnplaced = (row: Row) => !((num(row.p.Area) ?? 0) > 0) && !str(row.p.Level)
 
 export async function readSnapshot(viewer: Autodesk.Viewing.Viewer3D, opts: ReadSnapshotOptions = {}): Promise<Snapshot> {
   const t0 = performance.now()
@@ -160,7 +234,8 @@ export async function readSnapshot(viewer: Autodesk.Viewing.Viewer3D, opts: Read
       basePointNorth = num(row.p['Angle to True North']) ?? basePointNorth
     } else {
       const demolished = str(row.p['Phase Demolished'])
-      if ((!demolished || demolished === 'None') && geo.hasFragments(row.dbId)) kept.push(row)
+      if (demolished && demolished !== 'None') continue
+      if (geo.hasFragments(row.dbId) || (role === 'room' && isUnplaced(row))) kept.push(row)
     }
   }
 
@@ -217,6 +292,7 @@ function toElement(
   const typeName = row.typed ? (str(p['Type Name']) ?? family) : undefined
   const params: Element['params'] = {}
   for (const name of KEPT_PARAMS) if (p[name] !== undefined) params[name] = p[name]
+  if (role === 'room' && isUnplaced(row)) params[UNPLACED_PARAM] = 1
   const element: Element = {
     dbId: row.dbId,
     typeKey: row.typed ? `${family} / ${typeName}` : row.category,
