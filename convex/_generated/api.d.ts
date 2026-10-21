@@ -8,13 +8,27 @@
  * @module
  */
 
+import type * as classifications from "../classifications.js";
+import type * as exclusions from "../exclusions.js";
+import type * as packs from "../packs.js";
+import type * as projects from "../projects.js";
+import type * as runs from "../runs.js";
+import type * as validators from "../validators.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  classifications: typeof classifications;
+  exclusions: typeof exclusions;
+  packs: typeof packs;
+  projects: typeof projects;
+  runs: typeof runs;
+  validators: typeof validators;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.
