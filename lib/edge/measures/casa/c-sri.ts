@@ -87,7 +87,7 @@ export const C_SRI: Measure = {
         { label: L.steep, value: area(roofs.filter((r) => r.cls === 'steep')), unit: 'm²', source: 'parameter' },
         { label: L.noSlope, value: area(roofs.filter((r) => r.cls === null)), unit: 'm²', source: 'parameter' },
         { label: L.above, value: area(above), unit: 'm²', source: 'parameter', dbIds: above.map((r) => r.e.dbId) },
-        { label: L.share, value: total > 0 ? area(above) / total : null, unit: 'ratio', source: 'parameter' },
+        { label: L.share, value: total > 0 && roofs.some((r) => r.sri !== null) ? area(above) / total : null, unit: 'ratio', source: 'parameter' },
       ],
       gaps,
       flags,

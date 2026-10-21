@@ -1,3 +1,4 @@
+import { elevationZeroZ } from '../../casa/elevation'
 import { isHabitableName } from '../../casa/room-names'
 import { RULES, reaches } from '../../casa/rules'
 import { blockedOn, pendingFor, scopeOf, select } from '../../casa/scope'
@@ -25,9 +26,10 @@ const REQUIRED: ProjectInputKey[] = ['roadGradeM', 'floodElevationM', 'floodRetu
 /** A habitable floor at one elevation: a placed room, or, with no placed rooms, the units on one level. */
 type Space = { dbIds: number[]; z: number }
 
-function habitableSpaces(snapshot: Snapshot, removed: ReadonlySet<number>): { spaces: Space[]; source: ValueSource } {
+/** Elevations are in the level frame: model z less `zeroZ`, the z of level elevation 0. */
+function habitableSpaces(snapshot: Snapshot, removed: ReadonlySet<number>, zeroZ: number): { spaces: Space[]; source: ValueSource } {
   const rooms = roomIndexOf(snapshot).rooms.filter((r) => isHabitableName(r.name) && !removed.has(r.dbId))
-  if (rooms.length) return { spaces: rooms.map((r) => ({ dbIds: [r.dbId], z: r.zmin })), source: 'rooms' }
+  if (rooms.length) return { spaces: rooms.map((r) => ({ dbIds: [r.dbId], z: r.zmin - zeroZ })), source: 'rooms' }
   const elevation = new Map(snapshot.levels.map((l) => [l.name, l.elevation]))
   const byLevel = new Map<string, number[]>()
   for (const u of deriveUnits(snapshot)) byLevel.set(u.level, [...(byLevel.get(u.level) ?? []), ...u.floorDbIds, ...u.roomDbIds])
@@ -35,7 +37,6 @@ function habitableSpaces(snapshot: Snapshot, removed: ReadonlySet<number>): { sp
   return { spaces, source: 'levels' }
 }
 
-const sill = (e: Element): number | null => e.bbox?.[2] ?? null
 
 export const C_FLOOD: Measure = {
   scheme: 'CASA',
@@ -46,11 +47,13 @@ export const C_FLOOD: Measure = {
     const scope = scopeOf(snapshot, classifications, exclusions)
     const datum = inputs.datumOffsetM ?? 0
     const survey = (z: number) => z + datum
+    const zeroZ = elevationZeroZ(snapshot)
+    const sill = (e: Element): number | null => (e.bbox ? e.bbox[2] - zeroZ : null)
     const L = C_FLOOD_LABELS
     const blockedBy: MeasureBlocker[] = REQUIRED.filter((input) => inputs[input] === undefined).map((input) => ({ kind: 'missing-input', input }))
     const windows = select(scope, ['window'], /Windows/)
     const doors = select(scope, ['door'], /Doors/)
-    const { spaces, source } = habitableSpaces(snapshot, scope.applied.removed)
+    const { spaces, source } = habitableSpaces(snapshot, scope.applied.removed, zeroZ)
     const ids = (list: Space[]) => list.flatMap((s) => s.dbIds)
     const gaps: Gap[] = []
     const out: InputValue[] = [{ label: L.spaces, value: spaces.length, unit: 'spaces', source, dbIds: ids(spaces) }]

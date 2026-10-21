@@ -1,3 +1,4 @@
+import { elevationZeroZ } from '../../casa/elevation'
 import { areaWeighted, glazingTypes, uValue, type GlazingType } from '../../casa/glazing'
 import { cardinalRows } from '../../casa/orientation4'
 import { blockedOn, mergePending, pendingFor, roomPlacement, scopeOf, select } from '../../casa/scope'
@@ -17,7 +18,7 @@ export const C_ENV_LABELS = {
   floorsBelow: 'Floors below grade',
   roof: 'Roof area',
   levels: 'Levels in the model',
-  height: 'Building height, grade to the highest roof top',
+  height: 'Building height, level elevation 0 to the highest roof top',
   f2fMin: 'Floor-to-floor height, minimum',
   f2fAverage: 'Floor-to-floor height, average',
   windowHeight: 'Average window height',
@@ -73,7 +74,7 @@ export const C_ENV: Measure = {
         blockedOn(
           'C-ENV',
           'Placed rooms',
-          `${placement.placed} of ${placement.total} rooms are placed, so the room probe cannot tell the outside of a wall from its inside. Façade areas, window-to-wall ratios, footprint and floor counts wait for placed rooms; heights are taken from the project zero elevation.`,
+          `${placement.placed} of ${placement.total} rooms are placed, so the room probe cannot tell the outside of a wall from its inside. Façade areas, window-to-wall ratios, footprint and floor counts wait for placed rooms.`,
         ),
       )
     }
@@ -93,7 +94,7 @@ export const C_ENV: Measure = {
     }
 
     const roofs = byType(b.roofs)
-    const gradeZ = placement.unplaced ? 0 : b.rooms.gradeZ
+    const zeroZ = elevationZeroZ(snapshot)
     const roofTop = b.roofs.length ? Math.max(...b.roofs.map((r) => r.bbox?.[5] ?? -Infinity)) : null
     const useRooms = !placement.unplaced && b.ff.roomsMeasured > 0
     const steps = useRooms ? [...b.ff.byRoom.values()] : unitLevelSteps(snapshot.levels, new Set(deriveUnits(snapshot).map((u) => u.level)))
@@ -101,7 +102,7 @@ export const C_ENV: Measure = {
     inputs.push(
       { label: L.roof, value: roofs.reduce((s, t) => s + t.areaM2, 0), unit: 'm²', source: 'parameter', dbIds: b.roofs.map((r) => r.dbId) },
       { label: L.levels, value: snapshot.levels.length, unit: 'levels', source: 'levels' },
-      { label: L.height, value: roofTop === null || !Number.isFinite(roofTop) ? null : roofTop - gradeZ, unit: 'm', source: 'geometry' },
+      { label: L.height, value: roofTop === null || !Number.isFinite(roofTop) ? null : roofTop - zeroZ, unit: 'm', source: 'geometry' },
       { label: L.f2fMin, value: steps.length ? Math.min(...steps) : null, unit: 'm', source: stepSource },
       {
         label: L.f2fAverage,

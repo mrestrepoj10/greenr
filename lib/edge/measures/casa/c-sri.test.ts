@@ -39,6 +39,8 @@ describe('C-SRI', () => {
       ['Cubierta / Sin datos', 'Solar Reflectance Index', 'blocks-claim'],
       ['Cubierta / Sin datos', 'Slope', 'needs-data-sheet'],
     ])
+    const none = C_SRI.compute(snapshotOf([roofs[4]], []), cls, [], {})
+    expect(value(none, L.share)).toBeNull()
   })
 
   test('9.5° is a low slope, so the 64 threshold applies there', () => {

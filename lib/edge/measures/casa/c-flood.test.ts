@@ -94,6 +94,21 @@ describe('C-FLOOD', () => {
     expect(value(r, L.belowRoad)?.value).toBe(0)
   })
 
+  test('reads elevations against the level datum, not model z = 0, as on 210 King where geometry sits 18.96 m lower', () => {
+    const dz = -18.96
+    const shift = (e: Element): Element => ({
+      ...e,
+      ...(e.bbox ? { bbox: [e.bbox[0], e.bbox[1], e.bbox[2] + dz, e.bbox[3], e.bbox[4], e.bbox[5] + dz] as Element['bbox'] } : {}),
+      ...(e.footprint ? { footprint: { ...e.footprint, zmin: e.footprint.zmin + dz, zmax: e.footprint.zmax + dz } } : {}),
+      ...(e.facade ? { facade: { ...e.facade, zmin: e.facade.zmin + dz, zmax: e.facade.zmax + dz } } : {}),
+    })
+    const lowered = { ...t.snapshot, elements: t.snapshot.elements.map(shift) }
+    const at = (r: MeasureResult) => r.inputs.map((i) => [i.label, i.value])
+    const r = C_FLOOD.compute(lowered, t.classifications, [], typed)
+    const expected = at(C_FLOOD.compute(t.snapshot, t.classifications, [], typed))
+    expect(at(r).map(([label, v]) => [label, typeof v === 'number' ? Math.round(v * 1e9) / 1e9 : v])).toEqual(expected)
+  })
+
   test('an unclassified window type keeps the result provisional', () => {
     const cls = t.classifications.filter((c) => c.typeKey !== 'Window / W')
     const r = C_FLOOD.compute(t.snapshot, cls, [], typed)
