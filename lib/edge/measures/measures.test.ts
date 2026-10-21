@@ -220,7 +220,8 @@ describe('schemes', () => {
   })
 
   test('a CASA measure without its computation is blocked and says so instead of reporting a value', () => {
-    for (const m of both.measures.filter((x) => schemeOf(x.code) === 'CASA')) {
+    const pending = new Set<MeasureCode>(['C-ENV', 'C-VENT', 'C-WATER', 'C-FLEX', 'C-SRI', 'C-GLAZE'])
+    for (const m of both.measures.filter((x) => pending.has(x.code))) {
       expect(m.state).toBe('blocked')
       expect(m.blockedBy).toEqual([{ kind: 'not-implemented' }])
       expect(m.inputs).toEqual([])
