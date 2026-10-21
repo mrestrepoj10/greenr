@@ -1,4 +1,4 @@
-import type { Exclusion, InputValue, MeasureCode, RunResult, Snapshot } from '@/lib/edge/types'
+import type { Exclusion, InputValue, MeasureCode, RunResult, Scheme, Snapshot } from '@/lib/edge/types'
 
 export const DISCLAIMER = 'Inputs only. Savings are calculated in the EDGE App.'
 
@@ -11,6 +11,13 @@ export const MEASURE_TITLES: Record<MeasureCode, string> = {
   EEM02: 'Reflective Roof',
   EEM09: 'Efficiency of Glass',
   'AU-SKYLIGHT': 'Skylight Share of Roof Area',
+  'C-ENV': 'Envelope Sheet',
+  'C-FLOOD': 'Flood and Road Grade',
+  'C-VENT': 'Natural Ventilation and Daylight',
+  'C-WATER': 'Water Fixtures',
+  'C-FLEX': 'Non-structural Partitions',
+  'C-SRI': 'Roof Solar Reflectance',
+  'C-GLAZE': 'Glazing Light Transmittance',
 }
 
 export const CSV_FILE_NAME = 'edge-inputs.csv'
@@ -46,7 +53,7 @@ export type ParameterRef = {
   unit: string
   fileName: string
   page: number
-  guidePart: number
+  guideDoc: string
   guidePage: string
 }
 
@@ -60,7 +67,8 @@ export type PackManifest = {
   snapshotTakenAt: string
   author: string
   appVersion: string
-  guideVersion: string
+  schemes: Scheme[]
+  guides: Record<Scheme, string>
   north: string
   exclusions: string[]
   documents: PackDocument[]
@@ -128,7 +136,7 @@ export function buildManifest(run: RunResult, meta: PackMeta, imageLabels: strin
       unit: input.unit,
       fileName: documentFileName(m.code, version, 'pdf'),
       page: 1,
-      guidePart: m.guide.part,
+      guideDoc: m.guide.doc,
       guidePage: m.guide.page,
     })),
   )
@@ -142,7 +150,8 @@ export function buildManifest(run: RunResult, meta: PackMeta, imageLabels: strin
     snapshotTakenAt: run.snapshot.takenAt,
     author: meta.author,
     appVersion: meta.appVersion,
-    guideVersion: run.guideVersion,
+    schemes: run.schemes,
+    guides: run.guides,
     north: describeNorth(run.snapshot.north),
     exclusions: run.exclusions.map(describeExclusion),
     documents,

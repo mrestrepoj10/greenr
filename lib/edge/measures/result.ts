@@ -8,6 +8,7 @@ export function measureResult(code: MeasureCode, parts: Parts): MeasureResult {
   const gaps = parts.gaps ?? []
   const pendingTypeKeys = parts.pendingTypeKeys ?? []
   const pending = pendingTypeKeys.length > 0 || (parts.pendingExclusionIds?.length ?? 0) > 0
-  const state = gaps.some((g) => g.severity === 'blocks-claim') ? 'blocked' : pending ? 'provisional' : 'ok'
+  const blocked = (parts.blockedBy?.length ?? 0) > 0 || gaps.some((g) => g.severity === 'blocks-claim')
+  const state = blocked ? 'blocked' : pending ? 'provisional' : 'ok'
   return { ...parts, code, guide: GUIDE[code], state, gaps, pendingTypeKeys }
 }

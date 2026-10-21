@@ -8,8 +8,10 @@ export function roofAreaM2(roofs: { area?: number }[]): number {
 }
 
 export const D_ROOF: Measure = {
+  scheme: 'EDGE',
   code: 'D-ROOF',
   guide: GUIDE['D-ROOF'],
+  credits: ['Design tab'],
   compute(snapshot, classifications, exclusions) {
     const b = buildingOf(snapshot, classifications, exclusions)
     return measureResult('D-ROOF', {

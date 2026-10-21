@@ -4,8 +4,10 @@ import { buildingOf } from './building'
 import { measureResult } from './result'
 
 export const D_FLOORS: Measure = {
+  scheme: 'EDGE',
   code: 'D-FLOORS',
   guide: GUIDE['D-FLOORS'],
+  credits: ['Design tab'],
   compute(snapshot, classifications, exclusions) {
     const b = buildingOf(snapshot, classifications, exclusions)
     const s = b.storeys

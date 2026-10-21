@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { groupByType } from '@/lib/classify'
 import { computeRun } from '@/lib/edge/run'
-import type { ElementRole, ExclusionStatus, RunResult, RunState, Snapshot } from '@/lib/edge/types'
+import type { ElementRole, ExclusionStatus, RunResult, RunScope, RunState, Snapshot } from '@/lib/edge/types'
 import {
   useClassifications,
   useConfirmType,
@@ -92,13 +92,15 @@ export interface UseEdgeRunOptions {
   getViewer: () => APSViewer3D | null
   /** True north the person set for this project, in degrees. Undefined uses the model's own. */
   userNorth?: number
+  /** The schemes and project inputs every check and recompute measures with. */
+  scope: RunScope
 }
 
 /**
  * The run pipeline over the live viewer: snapshot, classification, proposals, measures. The snapshot stays in memory;
  * every decision recomputes from it and persists through Convex.
  */
-export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOptions) {
+export function useEdgeRun({ projectId, getViewer, userNorth, scope }: UseEdgeRunOptions) {
   const [store, dispatch] = useReducer(reduce, INITIAL)
   const stored = useLatestRun(projectId)
   const priorClassifications = useClassifications(projectId)
@@ -118,14 +120,14 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
   const [typeIndex, setTypeIndex] = useState(() => new Map<string, number[]>())
   const inFlight = useRef<AbortController | null>(null)
   const lastSave = useRef<Promise<RunDocId | null>>(Promise.resolve(null))
-  const context = useRef({ projectId, userNorth, priorClassifications, priorExclusions })
+  const context = useRef({ projectId, userNorth, scope, priorClassifications, priorExclusions })
 
   useEffect(() => {
     latest.current = run
   }, [run])
   useEffect(() => {
-    context.current = { projectId, userNorth, priorClassifications, priorExclusions }
-  }, [projectId, userNorth, priorClassifications, priorExclusions])
+    context.current = { projectId, userNorth, scope, priorClassifications, priorExclusions }
+  }, [projectId, userNorth, scope, priorClassifications, priorExclusions])
   useEffect(() => () => inFlight.current?.abort(), [])
 
   const adopt = useCallback((snapshot: Snapshot) => {
@@ -168,7 +170,7 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
     inFlight.current?.abort()
     const controller = new AbortController()
     inFlight.current = controller
-    const { userNorth: north, priorClassifications: classifications, priorExclusions: exclusions } = context.current
+    const { userNorth: north, scope: measured, priorClassifications: classifications, priorExclusions: exclusions } = context.current
     try {
       const viewer = requireViewer()
       const live = await runPipeline(
@@ -182,6 +184,7 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
           signal: controller.signal,
         },
         { classifications: classifications ?? [], exclusions: exclusions ?? [] },
+        measured,
       )
       adopt(live.snapshot)
       commit(live.run)
@@ -200,7 +203,7 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
         const snapshot = await ensureSnapshot()
         const now = latest.current ?? base
         const { classifications, exclusions } = change(now)
-        const next = computeRun(snapshot, classifications, exclusions, now)
+        const next = computeRun(snapshot, classifications, exclusions, context.current.scope, now)
         commit(next)
         return next
       } catch (error) {
@@ -282,7 +285,7 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
         await nextPaint()
         const snapshot = adopt(await readSnapshot(requireViewer(), { northAngleDeg: angleDeg }))
         const now = latest.current ?? base
-        commit(computeRun(snapshot, now.classifications, now.exclusions, now))
+        commit(computeRun(snapshot, now.classifications, now.exclusions, context.current.scope, now))
       } catch (error) {
         dispatch({ type: 'failed', message: error instanceof Error ? error.message : messages.errors.checkFailed })
       }

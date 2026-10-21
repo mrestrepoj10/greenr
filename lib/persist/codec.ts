@@ -79,6 +79,7 @@ export function toStoredRun(run: RunResult): StoredRunBundle {
       guide: m.guide,
       state: m.state,
       inputs: m.inputs,
+      ...(m.blockedBy === undefined ? {} : { blockedBy: m.blockedBy }),
       ...(orientations === undefined ? {} : { orientations }),
       gaps,
       pendingTypeKeys: m.pendingTypeKeys,
@@ -88,7 +89,9 @@ export function toStoredRun(run: RunResult): StoredRunBundle {
     run: {
       runId: run.runId,
       state: run.state,
-      guideVersion: run.guideVersion,
+      schemes: run.schemes,
+      guides: run.guides,
+      inputs: run.inputs,
       snapshot: run.snapshot,
       measures,
       computedAt: run.computedAt,
@@ -128,6 +131,7 @@ export function fromStoredRun(
     guide: m.guide,
     state: m.state,
     inputs: m.inputs,
+    ...(m.blockedBy === undefined ? {} : { blockedBy: m.blockedBy }),
     ...(m.orientations === undefined
       ? {}
       : {
@@ -143,7 +147,9 @@ export function fromStoredRun(
   return {
     runId: doc.runId,
     state: doc.state,
-    guideVersion: doc.guideVersion,
+    schemes: doc.schemes,
+    guides: doc.guides,
+    inputs: doc.inputs,
     snapshot: doc.snapshot,
     classifications: classifications.map(fromClassificationRow),
     exclusions: exclusions.map(fromExclusionRow),

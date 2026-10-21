@@ -22,7 +22,7 @@ export const messages = {
     size: (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`,
   },
   footer: 'EDGE V3.1 user guides. Inputs only. Savings are calculated in the EDGE App.',
-  guide: (part: number, page: string) => `Part ${part} p.${page}`,
+  guide: (doc: string, page: string) => `${doc} p.${page}`,
   empty: {
     title: 'Check this model for EDGE',
     lines: [

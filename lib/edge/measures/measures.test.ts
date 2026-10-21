@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import { box, classify, element, facadeAlong, room, snapshotOf } from '../__fixtures__/synthetic'
-import { computeRun } from '../run'
+import { computeRun, DEFAULT_SCOPE } from '../run'
 import { edgeRound } from '../storeys'
-import type { Classification, Element, MeasureCode, RunResult } from '../types'
+import { MEASURE_CODES, schemeOf, type Classification, type Element, type MeasureCode, type RunResult } from '../types'
 import { MEASURES } from '.'
 
 const measure = (run: RunResult, code: MeasureCode) => run.measures.find((m) => m.code === code)!
@@ -11,7 +11,7 @@ const input = (run: RunResult, code: MeasureCode, label: string) =>
 
 describe('EEM01 arithmetic', () => {
   const { snapshot, classifications } = box()
-  const eem01 = MEASURES.EEM01.compute(snapshot, classifications, [])
+  const eem01 = MEASURES.EEM01.compute(snapshot, classifications, [], {})
   const row = (o: string) => eem01.orientations!.find((r) => r.orientation === o)!
 
   test('gross façade is net wall area plus window and door W x H; glazing is windows plus glazed panels', () => {
@@ -33,7 +33,7 @@ describe('EEM01 arithmetic', () => {
 
   test('a skylight-classified window leaves façade glazing', () => {
     const cls = classifications.map((c) => (c.typeKey === 'Window / W2' ? { ...c, role: 'skylight' as const } : c))
-    const r = MEASURES.EEM01.compute(snapshot, cls, []).orientations!.find((o) => o.orientation === 'N')!
+    const r = MEASURES.EEM01.compute(snapshot, cls, [], {}).orientations!.find((o) => o.orientation === 'N')!
     expect(r.glazingAreaM2).toBe(0)
     expect(r.wallAreaM2).toBeCloseTo(136, 9)
   })
@@ -43,7 +43,7 @@ describe('EEM01 arithmetic', () => {
     const g = facadeAlong('window', [0, 7], [0, 8.5], 4, 5.5, 0.05)
     const cwWindow = element('Revit Windows', 'CW_SYS_PNL_WINDOW / CW', { width: 1.5, height: 1.5, facade: g.facade, bbox: g.bbox, hostDbId: ids.west.dbId })
     const withWindow = { ...s, elements: [...s.elements, cwWindow] }
-    const west = MEASURES.EEM01.compute(withWindow, [...c, ...classify({ 'CW_SYS_PNL_WINDOW / CW': 'window' })], []).orientations!.find((o) => o.orientation === 'W')!
+    const west = MEASURES.EEM01.compute(withWindow, [...c, ...classify({ 'CW_SYS_PNL_WINDOW / CW': 'window' })], [], {}).orientations!.find((o) => o.orientation === 'W')!
     expect(west.wallAreaM2).toBeCloseTo(70, 9)
     expect(west.glazingAreaM2).toBeCloseTo(40 + 2.25, 9)
     expect(west.glazingDbIds).toContain(cwWindow.dbId)
@@ -51,9 +51,12 @@ describe('EEM01 arithmetic', () => {
 
   test('a confirmed user exclusion drops the wall and the windows it hosts', () => {
     const { snapshot: s, classifications: c, ids } = box()
-    const r = MEASURES.EEM01.compute(s, c, [
-      { id: 'u1', dbIds: [ids.south.dbId], reason: 'user', source: 'user', status: 'accepted' },
-    ])
+    const r = MEASURES.EEM01.compute(
+      s,
+      c,
+      [{ id: 'u1', dbIds: [ids.south.dbId], reason: 'user', source: 'user', status: 'accepted' }],
+      {},
+    )
     expect(r.orientations!.find((o) => o.orientation === 'S')!.wallAreaM2).toBe(0)
   })
 
@@ -61,10 +64,10 @@ describe('EEM01 arithmetic', () => {
     const cls: Classification[] = classifications
       .filter((c) => c.typeKey !== 'Door / D1')
       .map((c) => (c.typeKey === 'Window / W1' ? { ...c, source: 'model', confidence: 0.9 } : c))
-    const r = MEASURES.EEM01.compute(snapshot, cls, [])
+    const r = MEASURES.EEM01.compute(snapshot, cls, [], {})
     expect(r.state).toBe('provisional')
     expect(r.pendingTypeKeys).toEqual(['Door / D1', 'Window / W1'])
-    expect(MEASURES.EEM01.compute(snapshot, classifications, []).state).toBe('ok')
+    expect(MEASURES.EEM01.compute(snapshot, classifications, [], {}).state).toBe('ok')
   })
 })
 
@@ -84,7 +87,7 @@ describe('D-FLOORS', () => {
       { name: 'L2', elevation: 3 },
     ]
     const s = snapshotOf([...deep, slab(0), slab(3), slab(6)], levels)
-    const run = computeRun(s, classify({ 'Floor / Slab': 'floor' }), [], undefined, 'now')
+    const run = computeRun(s, classify({ 'Floor / Slab': 'floor' }), [], DEFAULT_SCOPE, undefined, 'now')
     expect(input(run, 'D-FLOORS', 'Floors above grade')).toBe(2)
     expect(input(run, 'D-FLOORS', 'Floors below grade')).toBe(1)
     expect(input(run, 'D-F2F', 'Floor-to-floor')).toBeCloseTo(3, 9)
@@ -99,7 +102,7 @@ describe('D-FLOORS', () => {
       { name: 'L2', elevation: 5 },
     ]
     const s = snapshotOf([...shallow, slab(2), slab(5), slab(8)], levels)
-    const run = computeRun(s, classify({ 'Floor / Slab': 'floor' }), [], undefined, 'now')
+    const run = computeRun(s, classify({ 'Floor / Slab': 'floor' }), [], DEFAULT_SCOPE, undefined, 'now')
     expect(input(run, 'D-FLOORS', 'Floors above grade')).toBe(3)
     expect(input(run, 'D-FLOORS', 'Floors below grade')).toBe(0)
   })
@@ -116,10 +119,10 @@ describe('AU-SKYLIGHT', () => {
     return snapshotOf([roof, sky], [])
   }
   const cls = classify({ 'Basic Roof / R': 'roof', 'Skylight / S': 'skylight' })
-  const flagsAt = (m2: number) => MEASURES['AU-SKYLIGHT'].compute(roofAndSkylights(m2), cls, []).flags!.map((f) => f.level)
+  const flagsAt = (m2: number) => MEASURES['AU-SKYLIGHT'].compute(roofAndSkylights(m2), cls, [], {}).flags!.map((f) => f.level)
 
   test('reports the skylight share of roof area', () => {
-    const r = MEASURES['AU-SKYLIGHT'].compute(roofAndSkylights(3), cls, [])
+    const r = MEASURES['AU-SKYLIGHT'].compute(roofAndSkylights(3), cls, [], {})
     expect(r.inputs.find((i) => i.label === 'Skylight share of roof area')!.value).toBeCloseTo(0.015, 9)
   })
 
@@ -140,7 +143,7 @@ describe('EEM09 and EEM02 gaps', () => {
       'Analytic Construction': '1/8 in Pilkington single glazing',
     }
     const { snapshot, classifications } = box({ windowParams: zeros })
-    const gaps = MEASURES.EEM09.compute(snapshot, classifications, []).gaps
+    const gaps = MEASURES.EEM09.compute(snapshot, classifications, [], {}).gaps
     const w1 = gaps.find((g) => g.typeKey === 'Window / W1')!
     expect(w1.missing).toBe('Heat Transfer Coefficient (U), Visual Light Transmittance')
     expect(w1.severity).toBe('needs-data-sheet')
@@ -150,7 +153,7 @@ describe('EEM09 and EEM02 gaps', () => {
 
     const complete = { 'Thermal Resistance (R)': 0.55, 'Solar Heat Gain Coefficient': 0.35, 'Visual Light Transmittance': 0.6 }
     const ok = box({ windowParams: complete })
-    expect(MEASURES.EEM09.compute(ok.snapshot, ok.classifications, []).gaps.map((g) => g.typeKey)).toEqual([
+    expect(MEASURES.EEM09.compute(ok.snapshot, ok.classifications, [], {}).gaps.map((g) => g.typeKey)).toEqual([
       'System Panel / Glazed',
     ])
   })
@@ -166,6 +169,7 @@ describe('EEM09 and EEM02 gaps', () => {
       snapshotOf([plain, white], []),
       classify({ 'Basic Roof / Plain': 'roof', 'Basic Roof / Cool': 'roof' }),
       [],
+      {},
     )
     expect(r.state).toBe('blocked')
     expect(r.gaps.map((g) => [g.typeKey, g.severity])).toEqual([['Basic Roof / Plain', 'blocks-claim']])
@@ -176,20 +180,66 @@ describe('computeRun', () => {
   test('a run waits on unconfirmed exclusions and settles once they are confirmed', () => {
     const { snapshot, classifications } = box({ wallTop: 9 })
     const proposals = [{ id: 'rule:parapet', dbIds: [1, 2, 3], reason: 'parapet' as const, source: 'rule' as const, status: 'proposed' as const }]
-    const first = computeRun(snapshot, classifications, proposals, undefined, 't0')
+    const first = computeRun(snapshot, classifications, proposals, DEFAULT_SCOPE, undefined, 't0')
     expect(first.state).toBe('provisional')
     expect(measure(first, 'EEM01').pendingExclusionIds).toEqual(['rule:parapet'])
-    const second = computeRun(snapshot, classifications, [{ ...proposals[0], status: 'accepted' as const }], first, 't1')
+    const second = computeRun(snapshot, classifications, [{ ...proposals[0], status: 'accepted' as const }], DEFAULT_SCOPE, first, 't1')
     expect(second.state).toBe('confirmed')
     expect(second.runId).toBe(first.runId)
     expect(measure(second, 'EEM01').inputs[1].value as number).toBeLessThan(measure(first, 'EEM01').inputs[1].value as number)
   })
 
-  test('every measure code runs once, in registry order', () => {
+  test('an EDGE run lists every EDGE code once, in registry order', () => {
     const { snapshot, classifications } = box()
-    const run = computeRun(snapshot, classifications, [], undefined, 't0')
+    const run = computeRun(snapshot, classifications, [], DEFAULT_SCOPE, undefined, 't0')
     expect(run.measures.map((m) => m.code)).toEqual(['D-GIA', 'D-FLOORS', 'D-F2F', 'D-ROOF', 'EEM01', 'EEM02', 'EEM09', 'AU-SKYLIGHT'])
     expect(input(run, 'D-GIA', 'Gross internal area')).toBeCloseTo(4 * 9.7 * 9.7, 9)
   })
 })
 
+
+describe('schemes', () => {
+  const { snapshot, classifications } = box()
+  const both = computeRun(snapshot, classifications, [], { schemes: ['CASA', 'EDGE'], inputs: { climateZone: 'templado' } }, undefined, 't0')
+
+  test('a run measures only the selected schemes, EDGE before CASA whatever the selection order', () => {
+    expect(both.measures.map((m) => m.code)).toEqual([...MEASURE_CODES.EDGE, ...MEASURE_CODES.CASA])
+    const casa = computeRun(snapshot, classifications, [], { schemes: ['CASA'], inputs: {} }, undefined, 't0')
+    expect(casa.measures.map((m) => m.code)).toEqual([...MEASURE_CODES.CASA])
+  })
+
+  test('the run records its schemes, the inputs it read and the guide version per scheme', () => {
+    expect(both.schemes).toEqual(['CASA', 'EDGE'])
+    expect(both.inputs).toEqual({ climateZone: 'templado' })
+    expect(both.guides).toEqual({ EDGE: 'V3.1', CASA: '3.1 (Edición 2026)' })
+  })
+
+  test('adding CASA leaves every EDGE result as it was', () => {
+    const edge = computeRun(snapshot, classifications, [], DEFAULT_SCOPE, undefined, 't0')
+    expect(both.measures.slice(0, MEASURE_CODES.EDGE.length)).toEqual(edge.measures)
+  })
+
+  test('a CASA measure without its computation is blocked and says so instead of reporting a value', () => {
+    for (const m of both.measures.filter((x) => schemeOf(x.code) === 'CASA')) {
+      expect(m.state).toBe('blocked')
+      expect(m.blockedBy).toEqual([{ kind: 'not-implemented' }])
+      expect(m.inputs).toEqual([])
+    }
+  })
+
+  test('every registry entry sits under its own code and scheme, with credits and a guide page', () => {
+    for (const [code, m] of Object.entries(MEASURES)) {
+      expect(m.code).toBe(code)
+      expect(m.scheme).toBe(schemeOf(m.code))
+      expect(m.credits.length).toBeGreaterThan(0)
+      expect(m.guide.url).toMatch(/^https:\/\/.+#page=\d+$/)
+    }
+  })
+
+  test('CASA links open the PDF one page after the printed page, past the cover', () => {
+    const bec3 = MEASURES['C-SRI'].guide
+    expect(bec3).toMatchObject({ doc: 'CASA Colombia', version: '3.1 (Edición 2026)', page: '94' })
+    expect(bec3.url).toBe('https://casa.cccs.org.co/wp-content/uploads/2026/08/2026_CASA-Colombia-V3.pdf#page=95')
+    expect(MEASURES['C-ENV'].credits).toEqual(['GGc5', 'SBp3', 'Ep1', 'MS&C §2'])
+  })
+})

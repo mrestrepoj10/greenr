@@ -1,4 +1,5 @@
-import { ELEMENT_ROLES, EXCLUSION_REASONS, MEASURE_CODES } from '@/lib/edge/types'
+import { citation } from '@/lib/edge/guide'
+import { ALL_MEASURE_CODES, ELEMENT_ROLES, EXCLUSION_REASONS } from '@/lib/edge/types'
 import type {
   ElementRole,
   Exclusion,
@@ -27,7 +28,7 @@ export interface EdgeSession {
 const MAX_SUMMARY_INPUTS = 6
 
 const round = (value: number, digits: number) => Math.round(value * 10 ** digits) / 10 ** digits
-const cite = (m: Pick<MeasureResult, 'guide'>) => `EDGE V3.1 Part ${m.guide.part} p.${m.guide.page}`
+const cite = (m: Pick<MeasureResult, 'guide'>) => citation(m.guide)
 
 function inputRow(i: InputValue) {
   return { label: i.label, value: typeof i.value === 'number' ? round(i.value, 2) : i.value, unit: i.unit, source: i.source }
@@ -107,7 +108,8 @@ export function edgeToolSpecs(session: EdgeSession): ToolSpec[] {
           text: json({
             runId: run.runId,
             state: run.state,
-            guideVersion: run.guideVersion,
+            schemes: run.schemes,
+            guides: run.guides,
             view: run.snapshot.viewableName,
             units: run.snapshot.units,
             north: run.snapshot.north,
@@ -133,7 +135,7 @@ export function edgeToolSpecs(session: EdgeSession): ToolSpec[] {
         'One EDGE measure in full: every input with its source, the orientation rows, every gap with the missing parameter and element count, flags, pending types, and for EEM01 why walls and openings did or did not count. Codes: D-GIA, D-FLOORS, D-F2F, D-ROOF, EEM01, EEM02, EEM09, AU-SKYLIGHT.',
       parameters: {
         type: 'object',
-        properties: { code: { type: 'string', enum: MEASURE_CODES } },
+        properties: { code: { type: 'string', enum: ALL_MEASURE_CODES } },
         required: ['code'],
         additionalProperties: false,
       },

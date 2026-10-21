@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { computeRun } from '@/lib/edge/run'
+import { computeRun, DEFAULT_SCOPE } from '@/lib/edge/run'
 import { FIXTURE_SNAPSHOT } from '@/lib/classify/fixture'
 import type { Classification, Exclusion, ExclusionStatus, Snapshot } from '@/lib/edge/types'
 import {
@@ -69,7 +69,7 @@ describe('person decisions', () => {
       proposal('a', 'rule', 'accepted'),
       proposal('b', 'rule', 'rejected'),
       proposal('c'),
-    ])
+    ], DEFAULT_SCOPE)
     const decided = decisions(run)
     expect(decided.exclusions.map((e) => e.id)).toEqual(['a', 'b'])
     expect(decided.types.map((c) => c.typeKey)).toEqual(['Basic Wall / Generic - 200mm'])
@@ -97,7 +97,7 @@ describe('answerWithoutUser', () => {
     })
     expect(asked).toEqual([typeKey])
     expect(after).toEqual([expect.objectContaining({ typeKey, role: 'interior-wall', source: 'model' })])
-    const run = computeRun(FIXTURE_SNAPSHOT, after, [])
+    const run = computeRun(FIXTURE_SNAPSHOT, after, [], DEFAULT_SCOPE)
     expect(decisions(run).types).toEqual([])
   })
 
@@ -122,6 +122,7 @@ describe('runPipeline on 210 King', () => {
         },
       },
       { classifications: [], exclusions: [] },
+      DEFAULT_SCOPE,
     )
     expect(phases.map((p) => p.kind)).toEqual(['snapshot', 'measuring'])
     expect(live.run.state).toBe('provisional')
@@ -130,7 +131,7 @@ describe('runPipeline on 210 King', () => {
     expect(open.length).toBeGreaterThan(0)
 
     const exclusions = open.reduce((list, e) => withDecision(list, e.id, 'accepted'), live.run.exclusions)
-    const settled = computeRun(live.snapshot, live.run.classifications, exclusions, live.run)
+    const settled = computeRun(live.snapshot, live.run.classifications, exclusions, DEFAULT_SCOPE, live.run)
     expect(settled.state).toBe('confirmed')
     expect(settled.runId).toBe(live.run.runId)
     const s = settled.measures.find((m) => m.code === 'EEM01')!.orientations!.find((o) => o.orientation === 'S')!
@@ -142,10 +143,11 @@ describe('runPipeline on 210 King', () => {
     const live = await runPipeline(
       { readSnapshot: async () => snapshot, classify: async () => [], onPhase: async () => {} },
       { classifications: [], exclusions: [] },
+      DEFAULT_SCOPE,
     )
     const accepted = live.run.exclusions.map((e) => ({ ...e, status: 'accepted' as const }))
     const wwr = (exclusions: Exclusion[]) => {
-      const run = computeRun(live.snapshot, live.run.classifications, exclusions, live.run)
+      const run = computeRun(live.snapshot, live.run.classifications, exclusions, DEFAULT_SCOPE, live.run)
       return { state: run.state, rows: run.measures.find((m) => m.code === 'EEM01')!.orientations!.map((o) => o.wwr) }
     }
     const settled = wwr(accepted)
@@ -170,6 +172,7 @@ describe('runPipeline on 210 King', () => {
         onPhase: async () => {},
       },
       { classifications: [], exclusions: [] },
+      DEFAULT_SCOPE,
     )
     expect(asked).toBeGreaterThan(0)
     expect(live.unclassified).toBe(asked)

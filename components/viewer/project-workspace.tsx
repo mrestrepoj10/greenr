@@ -12,6 +12,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { ProjectViewer } from '@/components/viewer/project-viewer'
 import { StageLegend } from '@/components/viewer/stage-legend'
 import { useViewer, ViewerBridgeProvider } from '@/components/viewer/viewer-bridge'
+import { DEFAULT_SCOPE } from '@/lib/edge/run'
 import type { OrientationRow } from '@/lib/edge/types'
 import type { BucketModel } from '@/lib/models/types'
 import { useProject, useUpsertProject } from '@/lib/persist/hooks'
@@ -57,6 +58,7 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
     projectId: project?._id ?? null,
     getViewer,
     userNorth: project?.northSource === 'user' ? project.northAngleDeg : undefined,
+    scope: DEFAULT_SCOPE,
   })
   const run = edge.run
   // Every new run starts coloured; the person turns colouring off per run.

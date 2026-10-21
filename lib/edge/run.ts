@@ -1,5 +1,6 @@
+import { GUIDE_VERSIONS } from './guide'
 import { runMeasures } from './measures'
-import type { Classification, Exclusion, RunResult, Snapshot } from './types'
+import type { Classification, Exclusion, RunResult, RunScope, Snapshot } from './types'
 
 function fnv1a(s: string): string {
   let h = 0x811c9dc5
@@ -12,18 +13,23 @@ function fnv1a(s: string): string {
 
 const snapshotKey = (s: Pick<Snapshot, 'modelUrn' | 'viewableGuid' | 'takenAt'>) => `${s.modelUrn}|${s.viewableGuid}|${s.takenAt}`
 
+/** A new project measures EDGE only and has typed nothing yet. */
+export const DEFAULT_SCOPE: RunScope = { schemes: ['EDGE'], inputs: {} }
+
 /**
- * One pass of every measure over a snapshot. Provisional while any measure waits on a classification or an exclusion.
- * The run id is derived from the snapshot, so recomputing after a confirmation keeps it. `now` is the only clock read.
+ * One pass of the selected schemes' measures over a snapshot. Provisional while any measure waits on a classification
+ * or an exclusion. The run id is derived from the snapshot, so recomputing after a confirmation or a scheme change keeps
+ * it. `now` is the only clock read.
  */
 export function computeRun(
   snapshot: Snapshot,
   classifications: Classification[],
   exclusions: Exclusion[],
+  { schemes, inputs }: RunScope,
   prev?: RunResult,
   now: string = new Date().toISOString(),
 ): RunResult {
-  const measures = runMeasures(snapshot, classifications, exclusions)
+  const measures = runMeasures(snapshot, classifications, exclusions, inputs, schemes)
   const waiting = measures.some(
     (m) => m.state === 'provisional' || m.pendingTypeKeys.length > 0 || (m.pendingExclusionIds?.length ?? 0) > 0,
   )
@@ -31,7 +37,9 @@ export function computeRun(
   return {
     runId: prev && snapshotKey(prev.snapshot) === key ? prev.runId : `run-${fnv1a(key)}`,
     state: waiting ? 'provisional' : 'confirmed',
-    guideVersion: 'V3.1',
+    schemes,
+    guides: GUIDE_VERSIONS,
+    inputs,
     snapshot: {
       modelUrn: snapshot.modelUrn,
       viewableGuid: snapshot.viewableGuid,

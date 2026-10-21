@@ -251,8 +251,10 @@ function describeFactors(wall: WallProbe, portions: ReadonlySet<string> | undefi
 }
 
 export const EEM01: Measure = {
+  scheme: 'EDGE',
   code: 'EEM01',
   guide: GUIDE.EEM01,
+  credits: ['EEM01'],
   compute(snapshot, classifications, exclusions) {
     const tally = tallyFacade(snapshot, classifications, exclusions)
     const gross = tally.rows.reduce((s, r) => s + r.wallAreaM2, 0)

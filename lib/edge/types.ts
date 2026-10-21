@@ -169,25 +169,58 @@ export const RUN_STATES = [
 ] as const
 export type RunState = (typeof RUN_STATES)[number]
 
-export const MEASURE_CODES = [
-  'D-GIA',
-  'D-FLOORS',
-  'D-F2F',
-  'D-ROOF',
-  'EEM01',
-  'EEM02',
-  'EEM09',
-  'AU-SKYLIGHT',
-] as const
-export type MeasureCode = (typeof MEASURE_CODES)[number]
+export const SCHEMES = ['EDGE', 'CASA'] as const
+export type Scheme = (typeof SCHEMES)[number]
 
+/** Each scheme owns its measure codes, in the order a run lists them. */
+export const MEASURE_CODES = {
+  EDGE: ['D-GIA', 'D-FLOORS', 'D-F2F', 'D-ROOF', 'EEM01', 'EEM02', 'EEM09', 'AU-SKYLIGHT'],
+  CASA: ['C-ENV', 'C-FLOOD', 'C-VENT', 'C-WATER', 'C-FLEX', 'C-SRI', 'C-GLAZE'],
+} as const satisfies Record<Scheme, readonly string[]>
+export type MeasureCodeOf<S extends Scheme> = (typeof MEASURE_CODES)[S][number]
+export type MeasureCode = MeasureCodeOf<Scheme>
+export const ALL_MEASURE_CODES = [...MEASURE_CODES.EDGE, ...MEASURE_CODES.CASA] as const
+
+const SCHEME_OF = Object.fromEntries(SCHEMES.flatMap((s) => MEASURE_CODES[s].map((code) => [code, s]))) as Record<MeasureCode, Scheme>
+export const schemeOf = (code: MeasureCode): Scheme => SCHEME_OF[code]
+
+/** A page of a published document: an EDGE user guide part, the CASA Colombia guide or a Minvivienda act. `page` is the printed page; `url` opens the PDF there. */
 export type GuideRef = {
-  /** EDGE V3.1 user guide part number. */
-  part: 1 | 2 | 3 | 4 | 5 | 8
+  doc: string
+  version: string
   page: string
   title: string
   url: string
 }
+
+export const TYPOLOGIES = ['no-vis', 'vis', 'vip'] as const
+export const HOUSING_FORMS = ['unifamiliar', 'multifamiliar'] as const
+export const MUNICIPALITY_CATEGORIES = ['E', '1', '2', '3', '4', '5', '6'] as const
+export const CLIMATE_ZONES = ['frio', 'templado', 'calido-seco', 'calido-humedo'] as const
+export const FLOOD_RETURN_YEARS = [50, 100] as const
+
+/** What the person types for CASA and Res. 0194. Every field is optional: a CASA measure that needs a missing one is blocked and names it. */
+export type ProjectInputs = {
+  typology?: (typeof TYPOLOGIES)[number]
+  housingForm?: (typeof HOUSING_FORMS)[number]
+  /** DIVIPOLA code. */
+  municipality?: string
+  municipalityCategory?: (typeof MUNICIPALITY_CATEGORIES)[number]
+  /** Picked by the person from Anexo 2 or the Minvivienda geovisor, never derived from the municipality. */
+  climateZone?: (typeof CLIMATE_ZONES)[number]
+  /** Elevations in metres, in the survey datum. */
+  roadGradeM?: number
+  floodElevationM?: number
+  floodReturnYears?: (typeof FLOOD_RETURN_YEARS)[number]
+  inFloodplain?: boolean
+  /** Survey datum minus the project base point elevation, metres. */
+  datumOffsetM?: number
+  projectAreaM2?: number
+}
+export type ProjectInputKey = keyof ProjectInputs
+
+/** Why a measure cannot report yet. A blocked measure names what it waits for instead of guessing. */
+export type MeasureBlocker = { kind: 'missing-input'; input: ProjectInputKey } | { kind: 'not-implemented' }
 
 export type Gap = {
   id: string
@@ -313,6 +346,7 @@ export type MeasureResult = {
   guide: GuideRef
   state: 'ok' | 'provisional' | 'blocked'
   inputs: InputValue[]
+  blockedBy?: MeasureBlocker[]
   orientations?: OrientationRow[]
   gaps: Gap[]
   /** Element type keys whose classification is below the confidence threshold. */
@@ -324,10 +358,17 @@ export type MeasureResult = {
   envelope?: { walls: WallEvidence[]; openings: OpeningEvidence[] }
 }
 
-export type RunResult = {
+/** Which schemes a run measures and the project inputs it reads. */
+export type RunScope = {
+  schemes: Scheme[]
+  inputs: ProjectInputs
+}
+
+export type RunResult = RunScope & {
   runId: string
   state: RunState
-  guideVersion: 'V3.1'
+  /** The guide version each scheme cites, as of the run. */
+  guides: Record<Scheme, string>
   snapshot: Pick<Snapshot, 'modelUrn' | 'viewableGuid' | 'viewableName' | 'units' | 'north' | 'takenAt'>
   classifications: Classification[]
   exclusions: Exclusion[]
@@ -335,8 +376,13 @@ export type RunResult = {
   computedAt: string
 }
 
-export type Measure = {
-  code: MeasureCode
+type MeasureOf<S extends Scheme> = {
+  scheme: S
+  code: MeasureCodeOf<S>
   guide: GuideRef
-  compute: (snapshot: Snapshot, classifications: Classification[], exclusions: Exclusion[]) => MeasureResult
+  /** What the measure feeds: EDGE EEM codes, CASA credit and prerequisite codes, MS&C form sections. */
+  credits: string[]
+  compute: (snapshot: Snapshot, classifications: Classification[], exclusions: Exclusion[], inputs: ProjectInputs) => MeasureResult
 }
+
+export type Measure = { [S in Scheme]: MeasureOf<S> }[Scheme]

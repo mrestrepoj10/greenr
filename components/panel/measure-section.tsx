@@ -11,7 +11,7 @@ export function GuideLink({ guide }: { guide: GuideRef }) {
       title={guide.title}
       className="shrink-0 text-xs text-muted-foreground tabular-nums underline-offset-4 hover:text-foreground hover:underline"
     >
-      {messages.guide(guide.part, guide.page)}
+      {messages.guide(guide.doc, guide.page)}
     </a>
   )
 }

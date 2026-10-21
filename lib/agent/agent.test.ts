@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fixtureRun } from '@/lib/export/fixture'
 import type { ElementRole, Exclusion, ExclusionReason } from '@/lib/edge/types'
+import { citation } from '@/lib/edge/guide'
 import { agentExclusionId, edgeToolSpecs, type EdgeSession } from './edge-tools'
 import { askUserQuestionTool, QuestionBroker } from './question'
 import { createAgentTools, violation } from './registry'
@@ -44,9 +45,8 @@ describe('EDGE tools', () => {
     const summary = await createAgentTools(edgeToolSpecs(session)).get('edge_run_summary')!.run({}, { signal })
     const body = JSON.parse(summary.text)
     const eem01 = fixtureRun.measures.find((m) => m.code === 'EEM01')!.guide
-    expect(body.measures.find((m: { code: string }) => m.code === 'EEM01').guide).toBe(
-      `EDGE V3.1 Part ${eem01.part} p.${eem01.page}`,
-    )
+    expect(body.measures.find((m: { code: string }) => m.code === 'EEM01').guide).toBe(citation(eem01))
+    expect(citation(eem01)).toBe('EDGE Part 3, V3.1, p. 14')
     expect(summary.text).not.toMatch(/dbIds|wallDbIds/)
   })
 

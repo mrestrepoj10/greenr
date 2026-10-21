@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, test } from 'vitest'
 import { proposeExclusions } from './exclusions'
-import { computeRun } from './run'
+import { computeRun, DEFAULT_SCOPE } from './run'
 import type { Classification, MeasureCode, Orientation, RunResult, Snapshot } from './types'
 
 const load = <T>(name: string): T => JSON.parse(readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url), 'utf8')) as T
@@ -32,8 +32,8 @@ const value = (run: RunResult, code: MeasureCode, label: string) =>
 
 describe('210 King golden snapshot', () => {
   const proposals = proposeExclusions(snapshot, classifications)
-  const confirmed = computeRun(snapshot, classifications, proposals.map((e) => ({ ...e, status: 'accepted' as const })), undefined, 't')
-  const pending = computeRun(snapshot, classifications, proposals, undefined, 't')
+  const confirmed = computeRun(snapshot, classifications, proposals.map((e) => ({ ...e, status: 'accepted' as const })), DEFAULT_SCOPE, undefined, 't')
+  const pending = computeRun(snapshot, classifications, proposals, DEFAULT_SCOPE, undefined, 't')
   const rows = measure(confirmed, 'EEM01').orientations!
 
   test.each(Object.keys(SPIKE) as Orientation[])('EEM01 %s matches the spike within 1%', (o) => {

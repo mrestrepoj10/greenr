@@ -14,8 +14,10 @@ export function groupByType(elements: Element[]): Map<string, Element[]> {
 }
 
 export const EEM02: Measure = {
+  scheme: 'EDGE',
   code: 'EEM02',
   guide: GUIDE.EEM02,
+  credits: ['EEM02'],
   compute(snapshot, classifications, exclusions) {
     const b = buildingOf(snapshot, classifications, exclusions)
     const types = groupByType(b.roofs)

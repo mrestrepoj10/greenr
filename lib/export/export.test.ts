@@ -36,11 +36,11 @@ describe('edgeInputsCsv', () => {
     expect(eem01[0].split(',').slice(0, 5)).toEqual(['EEM01', 'N', '2840.50', '1250.20', '44.01'])
   })
 
-  test('every row cites a guide part and page', () => {
+  test('every row cites a guide document and page', () => {
     const rows = lines.filter((l) => l && !l.startsWith('measure,'))
     for (const row of rows) {
       const cells = row.split(',')
-      expect(cells[cells.length - 2]).toMatch(/^[1-8]$/)
+      expect(cells[cells.length - 2]).toMatch(/^EDGE Part [238]$/)
       expect(cells[cells.length - 1]).not.toBe('')
     }
   })
@@ -72,7 +72,7 @@ describe('buildManifest', () => {
     expect(manifest.disclaimer).toBe('Inputs only. Savings are calculated in the EDGE App.')
     expect(manifest.generatedAt).toBe(fixtureMeta.generatedAt)
     const wwr = manifest.parameters.find((p) => p.label === 'Area-weighted WWR')
-    expect(wwr).toMatchObject({ measure: 'EEM01', unit: '%', fileName: 'EEM01_Window_to_Wall_Ratio-01.pdf', guidePart: 3 })
+    expect(wwr).toMatchObject({ measure: 'EEM01', unit: '%', fileName: 'EEM01_Window_to_Wall_Ratio-01.pdf', guideDoc: 'EDGE Part 3', guidePage: '14' })
   })
 
   test('never mentions savings or pass and fail', () => {

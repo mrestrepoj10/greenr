@@ -1,13 +1,20 @@
 import type { GuideRef, MeasureResult, OrientationRow, RunResult } from '@/lib/edge/types'
 import type { PackMeta } from './manifest'
 
-const GUIDE_URL = 'https://edgebuildings.com/'
-
-const guide = (part: GuideRef['part'], page: string, title: string): GuideRef => ({
-  part,
+const guide = (part: 2 | 3, page: string, title: string): GuideRef => ({
+  doc: `EDGE Part ${part}`,
+  version: 'V3.1',
   page,
   title,
-  url: GUIDE_URL,
+  url: 'https://edgebuildings.com/',
+})
+
+const casaGuide = (page: string, title: string): GuideRef => ({
+  doc: 'CASA Colombia',
+  version: '3.1 (Edición 2026)',
+  page,
+  title,
+  url: `https://casa.cccs.org.co/wp-content/uploads/2026/08/2026_CASA-Colombia-V3.pdf#page=${Number(page) + 1}`,
 })
 
 const row = (
@@ -160,7 +167,9 @@ const measures: MeasureResult[] = [
 export const fixtureRun: RunResult = {
   runId: 'run-210king-0001',
   state: 'confirmed',
-  guideVersion: 'V3.1',
+  schemes: ['EDGE'],
+  guides: { EDGE: 'V3.1', CASA: '3.1 (Edición 2026)' },
+  inputs: {},
   snapshot: {
     modelUrn: 'dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6Z3JlZW5yLzIxMF9LaW5nX0FyY2gucnZ0',
     viewableGuid: '8f2a3c1e-4b6d-4e0f-9a7b-2c5d6e7f8a90',
@@ -204,4 +213,33 @@ export const fixtureMeta: PackMeta = {
   author: 'greenr for contact@bimframe.co',
   appVersion: '0.1.0',
   generatedAt: '2026-10-21T14:03:00.000Z',
+}
+
+const casaMeasures: MeasureResult[] = [
+  {
+    code: 'C-ENV',
+    guide: casaGuide('30', 'GGc5 Estudio bioclimático'),
+    state: 'blocked',
+    inputs: [],
+    blockedBy: [{ kind: 'not-implemented' }],
+    gaps: [],
+    pendingTypeKeys: [],
+  },
+  {
+    code: 'C-FLOOD',
+    guide: casaGuide('68', 'CCRp3 Resiliencia del proyecto'),
+    state: 'blocked',
+    inputs: [{ label: 'Lowest habitable floor', value: 2.4, unit: 'm', source: 'rooms', dbIds: [8001] }],
+    blockedBy: [{ kind: 'missing-input', input: 'roadGradeM' }],
+    gaps: [],
+    pendingTypeKeys: [],
+  },
+]
+
+/** The same project checked for EDGE and CASA, with the inputs a Colombian VIS project types. */
+export const fixtureBothRun: RunResult = {
+  ...fixtureRun,
+  schemes: ['EDGE', 'CASA'],
+  inputs: { typology: 'vis', housingForm: 'multifamiliar', municipalityCategory: '1', climateZone: 'templado', floodReturnYears: 50, inFloodplain: false },
+  measures: [...measures, ...casaMeasures],
 }

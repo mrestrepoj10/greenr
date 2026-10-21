@@ -1,12 +1,25 @@
 import { describe, expect, it } from 'vitest'
-import { fixtureRun } from '@/lib/export/fixture'
+import { fixtureBothRun, fixtureRun } from '@/lib/export/fixture'
 import { CHUNK_SIZE, assembleElements, fromStoredRun, gapKey, orientationKey, toStoredRun } from './codec'
 
 describe('run codec', () => {
-  it('round-trips the fixture through the stored shape', () => {
-    const stored = toStoredRun(fixtureRun)
+  it.each([
+    ['EDGE', fixtureRun],
+    ['EDGE and CASA', fixtureBothRun],
+  ])('round-trips the %s fixture through the stored shape', (_, run) => {
+    const stored = toStoredRun(run)
     const rebuilt = fromStoredRun(stored.run, stored.elements, stored.classifications, stored.exclusions)
-    expect(rebuilt).toEqual(fixtureRun)
+    expect(rebuilt).toEqual(run)
+  })
+
+  it('stores the schemes, the guide versions, the project inputs and why a measure is blocked', () => {
+    const { run } = toStoredRun(fixtureBothRun)
+    expect(run.schemes).toEqual(['EDGE', 'CASA'])
+    expect(run.guides).toEqual({ EDGE: 'V3.1', CASA: '3.1 (Edición 2026)' })
+    expect(run.inputs).toEqual(fixtureBothRun.inputs)
+    expect(run.measures.find((m) => m.code === 'C-FLOOD')!.blockedBy).toEqual([{ kind: 'missing-input', input: 'roadGradeM' }])
+    expect(run.measures.find((m) => m.code === 'EEM01')!.guide).toMatchObject({ doc: 'EDGE Part 3', version: 'V3.1', page: '14' })
+    expect('blockedBy' in run.measures.find((m) => m.code === 'EEM01')!).toBe(false)
   })
 
   it('strips element ids from the run document', () => {

@@ -22,8 +22,10 @@ export function missingGlazingData(params: Element['params']): string[] {
 
 /** EEM09 glass must match the EEM01 glazing, so the types are the ones EEM01 counted. */
 export const EEM09: Measure = {
+  scheme: 'EDGE',
   code: 'EEM09',
   guide: GUIDE.EEM09,
+  credits: ['EEM09'],
   compute(snapshot, classifications, exclusions) {
     const tally = tallyFacade(snapshot, classifications, exclusions)
     const byDbId = new Map(snapshot.elements.map((e) => [e.dbId, e]))

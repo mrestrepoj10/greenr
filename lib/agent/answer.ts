@@ -1,7 +1,7 @@
 import { defineCatalog, type Spec } from '@json-render/core'
 import { schema } from '@json-render/react/schema'
 import { z } from 'zod'
-import { MEASURE_CODES, ORIENTATIONS } from '@/lib/edge/types'
+import { ALL_MEASURE_CODES, ORIENTATIONS } from '@/lib/edge/types'
 
 /**
  * The answer cards the agent composes. Cards that show numbers take a measure code and read the value from the
@@ -15,7 +15,7 @@ export const answerCatalog = defineCatalog(schema, {
         'A short paragraph in plain English, **bold** and `code` allowed. The root of every answer is a note: its text is the lead sentence and its children are the cards that back it.',
     },
     stat: {
-      props: z.object({ code: z.enum(MEASURE_CODES), input: z.string().max(200) }),
+      props: z.object({ code: z.enum(ALL_MEASURE_CODES), input: z.string().max(200) }),
       description:
         'One measured input from the run, shown with its EDGE code and guide page. input is the label exactly as edge_run_summary or edge_measure lists it, for example "Overall window-to-wall ratio".',
     },
@@ -24,7 +24,7 @@ export const answerCatalog = defineCatalog(schema, {
       description: 'The EEM01 table of eight orientations from the run: wall area, glazing area and WWR. highlight marks rows to look at.',
     },
     gap_list: {
-      props: z.object({ measure: z.enum(MEASURE_CODES).nullable().optional(), limit: z.number().int().min(1).max(20).nullable().optional() }),
+      props: z.object({ measure: z.enum(ALL_MEASURE_CODES).nullable().optional(), limit: z.number().int().min(1).max(20).nullable().optional() }),
       description: 'Gaps from the run: types missing a parameter EDGE asks for, each with its element count. Clicking a gap selects its elements.',
     },
     element_chips: {

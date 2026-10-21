@@ -7,8 +7,10 @@ import { measureResult } from './result'
 
 /** IPMS 2 GIA includes unconditioned areas, so only massing and user exclusions apply. Outdoor rooms never enter the room index. */
 export const D_GIA: Measure = {
+  scheme: 'EDGE',
   code: 'D-GIA',
   guide: GUIDE['D-GIA'],
+  credits: ['Design tab'],
   compute(snapshot, classifications, exclusions) {
     const applied = applyExclusions(exclusions, ['massing', 'user'])
     const rooms = roomIndexOf(snapshot).rooms.filter((r) => !applied.removed.has(r.dbId))

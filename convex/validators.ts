@@ -57,6 +57,8 @@ export const runState = literals([
   'exported',
 ] as const)
 
+export const scheme = literals(['EDGE', 'CASA'] as const)
+
 export const measureCode = literals([
   'D-GIA',
   'D-FLOORS',
@@ -66,14 +68,55 @@ export const measureCode = literals([
   'EEM02',
   'EEM09',
   'AU-SKYLIGHT',
+  'C-ENV',
+  'C-FLOOD',
+  'C-VENT',
+  'C-WATER',
+  'C-FLEX',
+  'C-SRI',
+  'C-GLAZE',
 ] as const)
 
 export const guideRef = v.object({
-  part: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5), v.literal(8)),
+  doc: v.string(),
+  version: v.string(),
   page: v.string(),
   title: v.string(),
   url: v.string(),
 })
+
+export const projectInputs = v.object({
+  typology: v.optional(literals(['no-vis', 'vis', 'vip'] as const)),
+  housingForm: v.optional(literals(['unifamiliar', 'multifamiliar'] as const)),
+  municipality: v.optional(v.string()),
+  municipalityCategory: v.optional(literals(['E', '1', '2', '3', '4', '5', '6'] as const)),
+  climateZone: v.optional(literals(['frio', 'templado', 'calido-seco', 'calido-humedo'] as const)),
+  roadGradeM: v.optional(v.number()),
+  floodElevationM: v.optional(v.number()),
+  floodReturnYears: v.optional(v.union(v.literal(50), v.literal(100))),
+  inFloodplain: v.optional(v.boolean()),
+  datumOffsetM: v.optional(v.number()),
+  projectAreaM2: v.optional(v.number()),
+})
+
+export const projectInputKey = literals([
+  'typology',
+  'housingForm',
+  'municipality',
+  'municipalityCategory',
+  'climateZone',
+  'roadGradeM',
+  'floodElevationM',
+  'floodReturnYears',
+  'inFloodplain',
+  'datumOffsetM',
+  'projectAreaM2',
+] as const)
+
+export const measureBlocker = v.union(
+  v.object({ kind: v.literal('missing-input'), input: projectInputKey }),
+  v.object({ kind: v.literal('not-implemented') }),
+)
 
 export const inputValue = v.object({
   label: v.string(),
@@ -106,6 +149,7 @@ export const storedMeasure = v.object({
   guide: guideRef,
   state: literals(['ok', 'provisional', 'blocked'] as const),
   inputs: v.array(inputValue),
+  blockedBy: v.optional(v.array(measureBlocker)),
   orientations: v.optional(v.array(storedOrientationRow)),
   gaps: v.array(storedGap),
   pendingTypeKeys: v.array(v.string()),
@@ -123,7 +167,9 @@ export const runSnapshot = v.object({
 export const runFields = {
   runId: v.string(),
   state: runState,
-  guideVersion: v.literal('V3.1'),
+  schemes: v.array(scheme),
+  guides: v.object({ EDGE: v.string(), CASA: v.string() }),
+  inputs: projectInputs,
   snapshot: runSnapshot,
   measures: v.array(storedMeasure),
   computedAt: v.string(),

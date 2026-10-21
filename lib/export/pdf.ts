@@ -1,4 +1,5 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb, type RGB } from 'pdf-lib'
+import { citation } from '@/lib/edge/guide'
 import type { MeasureCode, MeasureResult, RunResult } from '@/lib/edge/types'
 import {
   DISCLAIMER,
@@ -135,10 +136,6 @@ class Sheet {
   }
 }
 
-function guideCitation(measure: MeasureResult, guideVersion: string): string {
-  return `EDGE ${guideVersion} User Guide Part ${measure.guide.part}, page ${measure.guide.page}, ${measure.guide.title}`
-}
-
 function orientationTable(sheet: Sheet, measure: MeasureResult): void {
   const rows = measure.orientations ?? []
   if (rows.length === 0) return
@@ -211,7 +208,7 @@ export async function measurePdf(
       ['Model URN', run.snapshot.modelUrn],
       ['Viewable', run.snapshot.viewableName],
       ['Snapshot taken', run.snapshot.takenAt],
-      ['Guide', guideCitation(measure, run.guideVersion)],
+      ['Guide', `${citation(measure.guide)}, ${measure.guide.title}`],
       ['Measure state', measure.state],
     ],
   )
@@ -232,7 +229,7 @@ export async function measurePdf(
       formatValue(input.value) || 'not in model',
       input.unit,
       input.source,
-      `Part ${measure.guide.part} p. ${measure.guide.page}`,
+      `${measure.guide.doc} p. ${measure.guide.page}`,
     ]),
   )
 

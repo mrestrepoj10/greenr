@@ -1,7 +1,7 @@
 import { classifySnapshot, toDecisionItem, type DecisionItem } from '@/lib/classify'
 import { proposeExclusions } from '@/lib/edge/exclusions'
 import { computeRun } from '@/lib/edge/run'
-import type { Classification, ElementRole, Exclusion, ExclusionStatus, RunResult, Snapshot } from '@/lib/edge/types'
+import type { Classification, ElementRole, Exclusion, ExclusionStatus, RunResult, RunScope, Snapshot } from '@/lib/edge/types'
 
 /** What the person and earlier runs already decided for this project. */
 export type Prior = {
@@ -112,7 +112,7 @@ function throwIfAborted(signal?: AbortSignal) {
 }
 
 /** Snapshot, then rules and earlier answers, then the decision model for leftovers, then the proposals and every measure. */
-export async function runPipeline(io: PipelineIO, prior: Prior): Promise<LiveRun> {
+export async function runPipeline(io: PipelineIO, prior: Prior, scope: RunScope): Promise<LiveRun> {
   await io.onPhase({ kind: 'snapshot' })
   const snapshot = await io.readSnapshot()
   throwIfAborted(io.signal)
@@ -131,5 +131,5 @@ export async function runPipeline(io: PipelineIO, prior: Prior): Promise<LiveRun
   await io.onPhase({ kind: 'measuring' })
   throwIfAborted(io.signal)
   const exclusions = mergeExclusions(proposeExclusions(snapshot, classifications), prior.exclusions)
-  return { snapshot, run: computeRun(snapshot, classifications, exclusions), unclassified }
+  return { snapshot, run: computeRun(snapshot, classifications, exclusions, scope), unclassified }
 }

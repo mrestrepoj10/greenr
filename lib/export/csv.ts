@@ -1,7 +1,7 @@
 import { ORIENTATIONS, type OrientationRow, type RunResult } from '@/lib/edge/types'
 import { formatValue } from './manifest'
 
-export const DESIGN_INPUTS_HEADER = ['measure', 'label', 'value', 'unit', 'source', 'guide_part', 'guide_page'] as const
+export const DESIGN_INPUTS_HEADER = ['measure', 'label', 'value', 'unit', 'source', 'guide_doc', 'guide_page'] as const
 
 export const EEM01_HEADER = [
   'measure',
@@ -10,7 +10,7 @@ export const EEM01_HEADER = [
   'glazing_area_m2',
   'wwr_percent',
   'source',
-  'guide_part',
+  'guide_doc',
   'guide_page',
 ] as const
 
@@ -45,7 +45,7 @@ export function eem01Rows(run: RunResult): string[][] {
       twoDecimals(o.glazingAreaM2),
       twoDecimals((o.wwr ?? 0) * 100),
       'geometry',
-      measure ? String(measure.guide.part) : '',
+      measure?.guide.doc ?? '',
       measure?.guide.page ?? '',
     ]
   })
@@ -59,7 +59,7 @@ export function designInputRows(run: RunResult): string[][] {
       formatValue(input.value),
       input.unit,
       input.source,
-      String(m.guide.part),
+      m.guide.doc,
       m.guide.page,
     ]),
   )

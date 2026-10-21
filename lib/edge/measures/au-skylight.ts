@@ -18,8 +18,10 @@ function skylightArea(e: Element): number {
 }
 
 export const AU_SKYLIGHT: Measure = {
+  scheme: 'EDGE',
   code: 'AU-SKYLIGHT',
   guide: GUIDE['AU-SKYLIGHT'],
+  credits: ['EEM25'],
   compute(snapshot, classifications, exclusions) {
     const b = buildingOf(snapshot, classifications, exclusions)
     const roles = roleIndex(classifications)
