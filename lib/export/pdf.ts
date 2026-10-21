@@ -1,8 +1,8 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb, type RGB } from 'pdf-lib'
-import { citation } from '@/lib/edge/guide'
+import { CREDIT_GUIDES, citation } from '@/lib/edge/guide'
 import { MEASURES } from '@/lib/edge/measures'
 import { schemeOf, type MeasureCode, type MeasureResult, type RunResult } from '@/lib/edge/types'
-import { blockerText } from '@/lib/ui/messages'
+import { blockerText, messages } from '@/lib/ui/messages'
 import {
   MEASURE_TITLES,
   SCHEME_EXPORT,
@@ -169,6 +169,27 @@ function orientationTable(sheet: Sheet, measure: MeasureResult): void {
   )
 }
 
+function creditSections(sheet: Sheet, code: MeasureCode, measure: MeasureResult): void {
+  const credits = MEASURES[code].credits.flatMap((credit) => (CREDIT_GUIDES[credit] ? [[credit, CREDIT_GUIDES[credit]] as const] : []))
+  if (credits.length) {
+    sheet.heading('Credits and pages')
+    for (const [credit, guide] of credits) {
+      const name = messages.creditNames[credit as keyof typeof messages.creditNames]
+      sheet.text(`${credit}${name ? ` (${name})` : ''}: ${citation(guide)}. ${guide.title}.`, BODY_SIZE, sheet.bold)
+      sheet.text(guide.url, 7, sheet.font, MUTED)
+      sheet.gap(2)
+    }
+  }
+  if (measure.flags?.length) {
+    sheet.heading('Thresholds the values crossed')
+    sheet.text('Each line names a threshold and the page that sets it. They are not a verdict: the reviewer decides.', 8, sheet.font, MUTED)
+    for (const flag of measure.flags) {
+      sheet.text(`${flag.message} (${citation(flag.guide)})`)
+      sheet.gap(2)
+    }
+  }
+}
+
 export async function measurePdf(
   run: RunResult,
   code: MeasureCode,
@@ -241,6 +262,8 @@ export async function measurePdf(
 
   orientationTable(sheet, measure)
 
+  if (strings.creditPages) creditSections(sheet, code, measure)
+
   sheet.heading('Gaps')
   if (measure.gaps.length === 0) sheet.text('No gaps. Every input for this measure was read from the model.', BODY_SIZE, font, MUTED)
   for (const gap of measure.gaps) {
@@ -256,7 +279,7 @@ export async function measurePdf(
   sheet.heading('North convention')
   sheet.text(describeNorth(run.snapshot.north))
 
-  for (const image of images) await sheet.image(image.label, image.png)
+  if (strings.elevations(measure)) for (const image of images) await sheet.image(image.label, image.png)
 
   const pages = doc.getPages()
   pages.forEach((page, i) => {

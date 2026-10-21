@@ -201,4 +201,37 @@ describe('a run checked for EDGE and CASA', () => {
     expect(text).toContain('EDGE Part 3, V3.1, p. 14')
     expect(text).not.toContain('CASA')
   })
+
+  test('a CASA PDF cites each credit it serves with its own page, and the thresholds the values crossed', async () => {
+    const text = pdfText(await measurePdf(fixtureBothRun, 'C-WATER', [], fixtureMeta))
+    expect(text).toContain('Credits and pages')
+    expect(text).toContain('Ap3 (Reducci\u00f3n del consumo de agua interior): CASA Colombia, 3.1 (Edici\u00f3n 2026), p. 124.')
+    expect(text).toContain('Thresholds the values crossed')
+    expect(text).toContain('above the NTC 1500 maximum of 8.3 L/min')
+    expect(text).toContain('blocked. Needs Flow or Flow Rate on the element types listed below, from their data sheets.')
+  })
+})
+
+describe('elevations in a CASA pack', () => {
+  const pages = async (bytes: Uint8Array) => (await PDFDocument.load(bytes)).getPageCount()
+  const envWithRows = {
+    ...fixtureBothRun,
+    measures: fixtureBothRun.measures.map((m) => (m.code === 'C-ENV' ? { ...m, orientations: fixtureRun.measures.find((x) => x.code === 'EEM01')!.orientations } : m)),
+  }
+
+  test('only C-ENV carries them, and only when it measured its façades', async () => {
+    const withImages = await pages(await measurePdf(envWithRows, 'C-ENV', images, fixtureMeta))
+    const without = await pages(await measurePdf(envWithRows, 'C-ENV', [], fixtureMeta))
+    expect(withImages - without).toBe(images.length)
+    for (const code of ['C-FLOOD', 'C-WATER'] as const) {
+      expect(await pages(await measurePdf(envWithRows, code, images, fixtureMeta))).toBe(await pages(await measurePdf(envWithRows, code, [], fixtureMeta)))
+    }
+    const blocked = await pages(await measurePdf(fixtureBothRun, 'C-ENV', images, fixtureMeta))
+    expect(blocked).toBe(await pages(await measurePdf(fixtureBothRun, 'C-ENV', [], fixtureMeta)))
+  })
+
+  test('an EDGE PDF still carries every elevation', async () => {
+    const withImages = await pages(await measurePdf(fixtureBothRun, 'D-GIA', images, fixtureMeta))
+    expect(withImages - (await pages(await measurePdf(fixtureBothRun, 'D-GIA', [], fixtureMeta)))).toBe(images.length)
+  })
 })

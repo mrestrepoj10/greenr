@@ -1,4 +1,4 @@
-import type { Exclusion, InputValue, MeasureCode, RunResult, Scheme, Snapshot } from '@/lib/edge/types'
+import type { Exclusion, InputValue, MeasureCode, MeasureResult, RunResult, Scheme, Snapshot } from '@/lib/edge/types'
 
 export type SchemeExport = {
   name: string
@@ -7,6 +7,10 @@ export type SchemeExport = {
   disclaimer: string
   csvFileName: string
   csvTitle: string
+  /** Which of the scheme's PDFs carry the four elevation pages. */
+  elevations: (measure: MeasureResult) => boolean
+  /** Cite each credit a measure serves with its own page, and list the thresholds it crossed. */
+  creditPages: boolean
 }
 
 export const SCHEME_EXPORT: Record<Scheme, SchemeExport> = {
@@ -17,6 +21,8 @@ export const SCHEME_EXPORT: Record<Scheme, SchemeExport> = {
     disclaimer: 'Inputs only. Savings are calculated in the EDGE App.',
     csvFileName: 'edge-inputs.csv',
     csvTitle: 'EDGE App inputs',
+    elevations: () => true,
+    creditPages: false,
   },
   CASA: {
     name: 'CASA Colombia',
@@ -25,6 +31,8 @@ export const SCHEME_EXPORT: Record<Scheme, SchemeExport> = {
     disclaimer: 'Pre-check only. Credits are awarded by CCCS/GBCI on the Arc platform.',
     csvFileName: 'casa-inputs.csv',
     csvTitle: 'CASA Colombia pre-check inputs',
+    elevations: (measure) => measure.code === 'C-ENV' && measure.orientations !== undefined,
+    creditPages: true,
   },
 }
 

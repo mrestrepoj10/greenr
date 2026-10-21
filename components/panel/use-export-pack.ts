@@ -60,7 +60,7 @@ export function useExportPack({ edge, getViewer, model, colouring }: UseExportPa
     const run = edge.latestRun()
     const viewer = getViewer()
     if (!run || (run.state !== 'confirmed' && run.state !== 'exported') || !viewer?.model) return
-    const rows = run.measures.find((m) => m.code === 'EEM01')?.orientations ?? []
+    const rows = (run.measures.find((m) => m.code === 'EEM01') ?? run.measures.find((m) => m.code === 'C-ENV'))?.orientations ?? []
     try {
       clearTheming(viewer)
       ghostDbIds(viewer, edge.contextIds)
