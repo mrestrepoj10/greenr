@@ -17,7 +17,6 @@ export interface BucketModel {
   urn: string
   name: string
   sizeBytes: number
-  modifiedAt: string | null
   translation: TranslationStatus
   viewables: Viewable[]
   /** guid of the viewable the viewer should open; absent when nothing is translated. */

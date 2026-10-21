@@ -16,10 +16,6 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function formatDate(iso: string | null): string {
-  return iso ? new Date(iso).toISOString().slice(0, 10) : 'unknown date'
-}
-
 export function ModelCard({ model }: { model: BucketModel }) {
   const view = viewableName(model)
   const openable = model.translation === 'success' && view
@@ -32,7 +28,6 @@ export function ModelCard({ model }: { model: BucketModel }) {
         <CardDescription className="flex items-center gap-2">
           <Badge variant={STATUS_VARIANT[model.translation]}>{model.translation}</Badge>
           <span className="tabular-nums">{formatBytes(model.sizeBytes)}</span>
-          <span className="tabular-nums">{formatDate(model.modifiedAt)}</span>
         </CardDescription>
       </CardHeader>
       <CardContent className="text-sm text-muted-foreground">

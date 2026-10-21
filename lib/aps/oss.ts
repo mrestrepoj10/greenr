@@ -5,7 +5,6 @@ const SCOPES = ['bucket:read', 'data:read'] as const
 export interface OssObject {
   objectKey: string
   size: number
-  lastModifiedDate?: string
 }
 
 interface ObjectsPage {
@@ -25,7 +24,6 @@ export async function listObjects(bucket: string): Promise<OssObject[]> {
         objects.push({
           objectKey: item.objectKey,
           size: item.size ?? 0,
-          lastModifiedDate: item.lastModifiedDate,
         })
       }
     }

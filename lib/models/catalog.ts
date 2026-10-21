@@ -76,7 +76,6 @@ export function toBucketModel(object: OssObject, urn: string, manifest: Manifest
     urn,
     name: displayName(object.objectKey),
     sizeBytes: object.size,
-    modifiedAt: object.lastModifiedDate ?? null,
     translation: translationStatus(manifest),
     viewables,
     preferredViewable: preferredViewable(viewables)?.guid,
