@@ -204,8 +204,8 @@ export const messages = {
     summary: (set: number, total: number) => `${set} of ${total} set`,
     help: 'CASA and Res. 0194 read these values. greenr never takes them from the model or guesses them from the municipality.',
     unset: 'Not set',
-    zoneHelp: 'Pick the zone yourself. A municipality can span several zones.',
-    geovisor: 'Minvivienda climate geovisor',
+    zoneHelp: 'Pick the zone yourself. A municipality can span several zones (Res. 0194, Art. 5).',
+    geovisor: 'Find your zone in the Res. 0194 geovisor',
     options: {
       typology: { 'no-vis': 'No VIS', vis: 'VIS', vip: 'VIP' },
       housingForm: { unifamiliar: 'Unifamiliar', multifamiliar: 'Multifamiliar' },
