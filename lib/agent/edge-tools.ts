@@ -52,7 +52,7 @@ function measureDigest(m: MeasureResult, full: boolean) {
             orientation: o.orientation,
             wallAreaM2: round(o.wallAreaM2, 1),
             glazingAreaM2: round(o.glazingAreaM2, 1),
-            wwr: o.wwr === null ? null : round(o.wwr, 3),
+            wwrPercent: o.wwr === null ? null : round(o.wwr * 100, 1),
           })),
         }
       : {}),

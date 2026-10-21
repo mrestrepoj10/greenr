@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { AnswerProvider, AnswerText } from '@/components/agent/answer-cards'
 import { QuestionWidget } from '@/components/agent/question-widget'
 import type { EdgeRun } from '@/components/panel/use-edge-run'
 import { AgentComposer, AgentNoticeView, AgentTranscript } from '@/components/ui/agent-panel'
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { groupByType } from '@/lib/classify'
 import type { Snapshot } from '@/lib/edge/types'
 import { edgeToolSpecs, type EdgeSession } from '@/lib/agent/edge-tools'
+import { ANSWER_INSTRUCTIONS } from '@/lib/agent/answer'
 import { GREENR_INSTRUCTIONS } from '@/lib/agent/instructions'
 import { AGENT_MODELS, DEFAULT_AGENT_MODEL, GATEWAY_BASE, isAgentModel, type AgentModelId } from '@/lib/agent/models'
 import { ASK_USER_QUESTION, askUserQuestionTool, QuestionBroker } from '@/lib/agent/question'
@@ -18,7 +20,10 @@ import { openExclusions, pendingTypes } from '@/lib/run/pipeline'
 import { messages } from '@/lib/ui/messages'
 import { cn } from '@/lib/utils'
 import { createViewerAgentTools, type ViewerAgentTools } from '@/lib/viewer-agent-tools'
+import { selectDbIds } from '@/lib/viewer/color'
 import type { APSViewer3D } from '@/lib/viewer-types'
+
+const INSTRUCTIONS = `${GREENR_INSTRUCTIONS}\n\n${ANSWER_INSTRUCTIONS}`
 
 /** The viewer kit tools greenr hands the agent; the rest of the kit stays out of its way. */
 const KIT_TOOLS = new Set([
@@ -129,7 +134,7 @@ export function EdgeAgentSection({ edge, getViewer, slug }: EdgeAgentProps) {
     gatewayBase: GATEWAY_BASE,
     model,
     modelLabel: AGENT_MODELS.find((m) => m.id === model)?.label,
-    instructions: GREENR_INSTRUCTIONS,
+    instructions: INSTRUCTIONS,
     storageKey: `greenr-agent:${slug}:${model}`,
   })
 
@@ -152,6 +157,19 @@ export function EdgeAgentSection({ edge, getViewer, slug }: EdgeAgentProps) {
     greeted.current.add(run.runId)
     void send(messages.agent.firstTurn)
   }, [run, origin, runtimeStatus, turnStatus, send])
+
+  const answers = useMemo(
+    () => ({
+      run,
+      select: (dbIds: readonly number[]) => {
+        const viewer = getViewer()
+        if (viewer?.model && dbIds.length > 0) selectDbIds(viewer, dbIds)
+      },
+      resolveSet: (id: string) => (id === 'selection' ? getViewer()?.getSelection() : kit.sets.get(id)?.dbIds),
+      send: (text: string) => void send(text),
+    }),
+    [run, getViewer, kit, send],
+  )
 
   const [openChoice, setOpenChoice] = useState<boolean | null>(null)
   const open = openChoice ?? (agent.messages.length > 0 || agent.turnStatus !== 'idle')
@@ -201,19 +219,22 @@ export function EdgeAgentSection({ edge, getViewer, slug }: EdgeAgentProps) {
       {open ? (
         <div className="flex min-h-0 flex-1 flex-col">
           {agent.notice ? <AgentNoticeView notice={agent.notice} className="mx-4 mb-2" /> : null}
-          <AgentTranscript
-            messages={agent.messages}
-            turnStatus={agent.turnStatus}
-            sets={agent.sets}
-            assistantLabel={messages.agent.heading}
-            emptyState={messages.agent.empty}
-            onUndo={agent.undo}
-            onSelectSet={agent.selectSet}
-            renderAction={(action) =>
-              action.tool === ASK_USER_QUESTION ? <QuestionWidget action={action} broker={broker} /> : undefined
-            }
-            data-testid="agent-transcript"
-          />
+          <AnswerProvider value={answers}>
+            <AgentTranscript
+              messages={agent.messages}
+              turnStatus={agent.turnStatus}
+              sets={agent.sets}
+              assistantLabel={messages.agent.heading}
+              emptyState={messages.agent.empty}
+              onUndo={agent.undo}
+              onSelectSet={agent.selectSet}
+              renderAction={(action) =>
+                action.tool === ASK_USER_QUESTION ? <QuestionWidget action={action} broker={broker} /> : undefined
+              }
+              renderText={(text, streaming) => <AnswerText text={text} streaming={streaming} />}
+              data-testid="agent-transcript"
+            />
+          </AnswerProvider>
           <AgentComposer
             turnStatus={agent.turnStatus}
             runtimeStatus={agent.runtimeStatus}

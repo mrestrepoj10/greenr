@@ -80,6 +80,14 @@ export const messages = {
     placeholder: 'Ask about a value, a gap or an exclusion',
     empty: 'Ask why a wall counts, what a gap means, or which exclusions to accept. The assistant proposes; you confirm in the panel above.',
     firstTurn: 'The check just finished. Walk me through what needs my confirmation.',
+    cards: {
+      composing: 'Composing the answer',
+      notInRun: (code: string, input: string) => `${code} has no input "${input}" in this run`,
+      noGaps: 'No gaps in this run.',
+      moreGaps: (n: number) => `and ${n} more in the Gaps section`,
+      north: (deg: string, source: string) => `North ${deg}, ${source}`,
+      suggested: 'Ask next',
+    },
     question: {
       legend: 'The assistant asks',
       submit: 'Send answers',
