@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { connection } from 'next/server'
 import { Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
@@ -18,6 +19,7 @@ export default function ProjectPage({ params }: PageProps<'/p/[slug]'>) {
 
 async function Project({ params }: Pick<PageProps<'/p/[slug]'>, 'params'>) {
   const { slug } = await params
+  await connection()
   const model = await findBucketModel(slug)
   if (!model || model.translation !== 'success') notFound()
   const view = viewableName(model)

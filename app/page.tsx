@@ -1,9 +1,11 @@
+import { connection } from 'next/server'
 import { Suspense } from 'react'
 import { ModelCard } from '@/components/models/model-card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { listBucketModels } from '@/lib/models/list'
 
 async function ModelGrid() {
+  await connection()
   const { bucket, models } = await listBucketModels()
   return (
     <>
