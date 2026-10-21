@@ -152,12 +152,12 @@ function orientationTable(sheet: Sheet, measure: MeasureResult): void {
   sheet.gap(4)
   sheet.table(
     [
-      { title: 'Orientation', width: 70 },
+      { title: 'Orientation', width: 60 },
       { title: 'Gross facade (m2)', width: 100, entered: true },
       { title: 'Glazing incl. frames (m2)', width: 120, entered: true },
-      { title: 'WWR (%)', width: 70, entered: true },
-      { title: 'Wall elements', width: 75 },
-      { title: 'Glazing elements', width: 76 },
+      { title: 'WWR (%)', width: 65, entered: true },
+      { title: 'Wall elements', width: 80 },
+      { title: 'Glazing elements', width: 86 },
     ],
     rows.map((o) => [
       o.orientation,
