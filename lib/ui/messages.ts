@@ -7,6 +7,20 @@ export const messages = {
   checkAgain: 'Check again',
   export: 'Export evidence pack',
   exportHint: 'Available once every pending type and exclusion is confirmed.',
+  exportStatus: {
+    capturing: (side: 'N' | 'E' | 'S' | 'W') =>
+      `Capturing the ${{ N: 'north', E: 'east', S: 'south', W: 'west' }[side]} elevation`,
+    packing: 'Writing the PDFs, CSV and manifest',
+    uploading: 'Uploading the pack',
+    failed: 'The evidence pack did not upload. The run is unchanged.',
+    author: 'greenr EDGE pre-check',
+    title: 'Evidence pack',
+    share: 'Share link',
+    download: 'Download zip',
+    copy: 'Copy link',
+    copied: 'Link copied',
+    size: (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`,
+  },
   footer: 'EDGE V3.1 user guides. Inputs only. Savings are calculated in the EDGE App.',
   guide: (part: number, page: string) => `Part ${part} p.${page}`,
   empty: {

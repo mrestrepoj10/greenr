@@ -5,6 +5,8 @@ import { useCallback, useState } from 'react'
 import { CompassRose } from '@/components/panel/compass-rose'
 import { ConfirmationBlock } from '@/components/panel/confirmation-block'
 import { DesignInputs } from '@/components/panel/design-inputs'
+import { ExportResult } from '@/components/panel/export-result'
+import type { ExportView } from '@/components/panel/use-export-pack'
 import { GapsList } from '@/components/panel/gaps-list'
 import { InlineAlert } from '@/components/panel/inline-alert'
 import { MeasureSection } from '@/components/panel/measure-section'
@@ -25,6 +27,8 @@ export interface EdgePanelProps {
   error?: string | null
   /** The phase line while a check runs, for example how many types are being classified. */
   progress?: string
+  /** Export progress, the share link once uploaded, or why the upload failed. */
+  exportView?: ExportView | null
   /** "stored" when the run shown is the last one saved for the project, not one measured in this session. */
   origin?: 'live' | 'stored' | null
   /** Element ids behind a type key, for isolating a pending type. */
@@ -44,6 +48,7 @@ export function EdgePanel({
   state,
   error,
   progress,
+  exportView,
   origin,
   elementsOf = noElements,
   colouring,
@@ -75,6 +80,7 @@ export function EdgePanel({
     <aside className="flex h-full min-h-0 flex-col bg-background" data-testid="edge-panel" data-state={state}>
       <PanelHeader state={state} hasRun={run !== null} onCheck={onCheck} onExport={onExport} />
       {error ? <InlineAlert>{error}</InlineAlert> : null}
+      {exportView ? <ExportResult view={exportView} /> : null}
       <ScrollArea className="min-h-0 flex-1">
         {measuring ? <PanelSkeleton status={progress} /> : null}
         {!measuring && !run ? <PanelEmpty /> : null}

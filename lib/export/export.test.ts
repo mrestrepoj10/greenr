@@ -118,4 +118,14 @@ describe('buildPack', () => {
     expect(entries['elevations/North_elevation.png']).toEqual(images[0].png)
     for (const d of manifest.documents) expect(entries[d.fileName], d.fileName).toBeDefined()
   })
+
+  test('only the EEM01 PDF carries the elevation pages', async () => {
+    const { zip, manifest } = await buildPack(fixtureRun, images, fixtureMeta)
+    const entries = unzipSync(zip)
+    for (const m of fixtureRun.measures) {
+      const file = manifest.documents.find((d) => d.measure === m.code && d.kind === 'pdf')!.fileName
+      const doc = await PDFDocument.load(entries[file])
+      expect(doc.getPageCount(), m.code).toBe(m.code === 'EEM01' ? 1 + images.length : 1)
+    }
+  })
 })

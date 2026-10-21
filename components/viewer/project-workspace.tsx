@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 
 import { EdgePanel } from '@/components/panel/edge-panel'
 import { phaseMessage, useEdgeRun } from '@/components/panel/use-edge-run'
+import { useExportPack } from '@/components/panel/use-export-pack'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { ProjectViewer } from '@/components/viewer/project-viewer'
 import { StageLegend } from '@/components/viewer/stage-legend'
@@ -62,6 +63,7 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
   const setColourOn = (on: boolean) => setColourOffFor(on ? null : (run?.runId ?? null))
 
   const rows = run?.measures.find((m) => m.code === 'EEM01')?.orientations
+  const pack = useExportPack({ edge, getViewer, model, colouring: colourOn && rows !== undefined })
 
   return (
     <div className="flex h-dvh flex-col">
@@ -96,6 +98,7 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
             state={edge.state}
             error={edge.error}
             progress={phaseMessage(edge.phase)}
+            exportView={pack.view}
             origin={edge.origin}
             elementsOf={edge.elementsOf}
             colouring={{ on: colourOn && rows !== undefined, onChange: setColourOn }}
@@ -103,7 +106,7 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
             onConfirmType={edge.confirmType}
             onDecideExclusion={edge.decideExclusion}
             onNorthChange={edge.setNorth}
-            onExport={edge.markExported}
+            onExport={pack.busy ? undefined : pack.exportPack}
           />
         </ResizablePanel>
       </ResizablePanelGroup>

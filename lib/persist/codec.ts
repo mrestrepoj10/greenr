@@ -46,9 +46,10 @@ export function toExclusionRow(e: Exclusion): ExclusionRow {
   return { ...rest, status: confirmed ? 'accepted' : 'proposed', ...(note === undefined ? {} : { note }) }
 }
 
+/** Picks the exclusion's own fields, so a Convex document's _id, _creationTime and projectId never ride along. */
 export function fromExclusionRow(row: ExclusionRow): Exclusion {
-  const { status, note, ...rest } = row
-  return { ...rest, confirmed: status === 'accepted', ...(note === undefined ? {} : { note }) }
+  const { id, dbIds, reason, source, status, note } = row
+  return { id, dbIds, reason, source, confirmed: status === 'accepted', ...(note === undefined ? {} : { note }) }
 }
 
 export function toClassificationRow(c: Classification): ClassificationRow {

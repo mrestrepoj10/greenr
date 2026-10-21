@@ -13,6 +13,7 @@ import {
   useSaveRun,
   useSetNorth,
   type ProjectId,
+  type RunDocId,
 } from '@/lib/persist/hooks'
 import { classifyRemote } from '@/lib/run/classify-remote'
 import { runPipeline, withConfirmedType, withDecision, type PipelinePhase } from '@/lib/run/pipeline'
@@ -104,6 +105,7 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
   const snapshotRead = useRef<Promise<Snapshot> | null>(null)
   const [typeIndex, setTypeIndex] = useState(() => new Map<string, number[]>())
   const inFlight = useRef<AbortController | null>(null)
+  const lastSave = useRef<Promise<RunDocId | null>>(Promise.resolve(null))
   const context = useRef({ projectId, userNorth, priorClassifications, priorExclusions })
 
   useEffect(() => {
@@ -141,7 +143,11 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
       latest.current = next
       dispatch({ type: 'measured', run: next })
       const id = context.current.projectId
-      if (id) saveRun(id, next).catch(() => dispatch({ type: 'failed', message: messages.errors.saveFailed }))
+      if (!id) return
+      lastSave.current = saveRun(id, next).catch(() => {
+        dispatch({ type: 'failed', message: messages.errors.saveFailed })
+        return null
+      })
     },
     [saveRun],
   )
@@ -231,9 +237,11 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
     [adopt, commit, requireViewer, setNorthRow],
   )
 
+  /** Marks the run exported and resolves to its stored document once the save lands. */
   const markExported = useCallback(() => {
     const base = latest.current
     if (base) commit({ ...base, state: 'exported' })
+    return lastSave.current
   }, [commit])
 
   const elementsOf = useCallback((typeKey: string) => typeIndex.get(typeKey) ?? [], [typeIndex])

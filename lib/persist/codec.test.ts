@@ -60,4 +60,11 @@ describe('run codec', () => {
     const rebuilt = fromStoredRun(stored.run, stored.elements, stored.classifications, rows)
     expect(rebuilt.exclusions.map((e) => e.id)).toEqual(fixtureRun.exclusions.slice(1).map((e) => e.id))
   })
+
+  it('rebuilds a run from Convex documents that saves again without system fields', () => {
+    const stored = toStoredRun(fixtureRun)
+    const docs = stored.exclusions.map((row) => ({ ...row, _id: 'x', _creationTime: 1, projectId: 'p', updatedAt: 2 }))
+    const rebuilt = fromStoredRun(stored.run, stored.elements, stored.classifications, docs)
+    expect(toStoredRun(rebuilt).exclusions).toEqual(stored.exclusions)
+  })
 })
