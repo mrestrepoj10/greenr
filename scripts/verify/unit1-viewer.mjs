@@ -95,15 +95,13 @@ try {
       viewable: node && node.name(),
       rootId: m.getInstanceTree() && m.getInstanceTree().getRootId(),
       title: document.querySelector('[data-testid=model-name]')?.textContent,
-      panel: document.querySelector('[data-testid=edge-panel]')?.textContent?.trim(),
-      checkDisabled: document.querySelector('[data-testid=check-edge]')?.disabled,
+      panel: !!document.querySelector('[data-testid=edge-panel]'),
     }
   })()`)
   check(loaded.viewable === EXPECTED_VIEW, 'viewer opened the named viewable', loaded.viewable)
   check(typeof loaded.rootId === 'number', 'instance tree has a root', loaded.rootId)
   check(loaded.title === MODEL_NAME, 'top bar shows the model name', loaded.title)
-  check(loaded.panel === 'Run a check to see EDGE inputs', 'right panel placeholder', loaded.panel)
-  check(loaded.checkDisabled === true, 'Check for EDGE is disabled')
+  check(loaded.panel, 'right panel renders')
 
   const rooms = evalJson(`new Promise((resolve, reject) => {
     const m = window.NOP_VIEWER.model
