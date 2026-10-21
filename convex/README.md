@@ -37,7 +37,13 @@ Vercel builds with `pnpm build` only. No `CONVEX_DEPLOY_KEY` is set in Vercel, s
 npx convex deploy
 ```
 
-Then set `NEXT_PUBLIC_CONVEX_URL` in Vercel's production environment to the production deployment URL that `npx convex deploy` prints. TODO for the integration step: that variable is not set yet, and the dev deployment `fantastic-salamander-425` is what `.env.local` points at.
+For now Vercel preview and production both read `NEXT_PUBLIC_CONVEX_URL` from the dev deployment `fantastic-salamander-425`, the same one `.env.local` points at; it was set with `vercel env add NEXT_PUBLIC_CONVEX_URL production,preview`, the value piped from `.env.local`. Push functions there with `npx convex dev --once` before a deploy. Before a public launch, create the production deployment with `npx convex deploy`, then replace the variable in Vercel production with the URL it prints.
+
+`admin.resetProject` is an internal mutation, callable only from the deployment's CLI. The end-to-end check uses it to start 210 King from an empty project:
+
+```sh
+npx convex run admin:resetProject '{"slug":"<model slug>"}'
+```
 
 Verify the dev deployment end to end with:
 
