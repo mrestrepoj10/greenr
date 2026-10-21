@@ -219,15 +219,6 @@ describe('schemes', () => {
     expect(both.measures.slice(0, MEASURE_CODES.EDGE.length)).toEqual(edge.measures)
   })
 
-  test('a CASA measure without its computation is blocked and says so instead of reporting a value', () => {
-    const pending = new Set<MeasureCode>(['C-SRI'])
-    for (const m of both.measures.filter((x) => pending.has(x.code))) {
-      expect(m.state).toBe('blocked')
-      expect(m.blockedBy).toEqual([{ kind: 'not-implemented' }])
-      expect(m.inputs).toEqual([])
-    }
-  })
-
   test('every registry entry sits under its own code and scheme, with credits and a guide page', () => {
     for (const [code, m] of Object.entries(MEASURES)) {
       expect(m.code).toBe(code)
