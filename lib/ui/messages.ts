@@ -1,9 +1,28 @@
-import type { ElementRole, ExclusionReason, ExclusionStatus, ProjectInputKey, RunState, ValueSource } from '@/lib/edge/types'
+import type {
+  ElementRole,
+  ExclusionReason,
+  ExclusionStatus,
+  MeasureCodeOf,
+  ProjectInputKey,
+  RunState,
+  Scheme,
+  ValueSource,
+} from '@/lib/edge/types'
+
+const SCHEME_SHORT: Record<Scheme, string> = { EDGE: 'EDGE', CASA: 'CASA' }
+const SCHEME_NAME: Record<Scheme, string> = { EDGE: 'EDGE', CASA: 'CASA Colombia' }
+const listed = (schemes: readonly Scheme[], names: Record<Scheme, string>) => schemes.map((s) => names[s]).join(' and ')
 
 export const messages = {
   app: 'greenr',
   projects: 'Projects',
-  check: 'Check for EDGE',
+  panelTitle: 'Scheme pre-check',
+  schemes: {
+    label: 'Schemes to check',
+    options: { EDGE: 'EDGE', CASA: 'CASA', both: 'EDGE + CASA' },
+    heading: (scheme: Scheme, version: string) => `${SCHEME_NAME[scheme]} ${version}`,
+  },
+  check: (schemes: readonly Scheme[]) => `Check for ${listed(schemes, SCHEME_SHORT)}`,
   checkAgain: 'Check again',
   export: 'Export evidence pack',
   exportHint: 'Available once every pending type and exclusion is confirmed.',
@@ -13,7 +32,7 @@ export const messages = {
     packing: 'Writing the PDFs, CSV and manifest',
     uploading: 'Uploading the pack',
     failed: 'The evidence pack did not upload. The run is unchanged.',
-    author: 'greenr EDGE pre-check',
+    author: 'greenr pre-check',
     title: 'Evidence pack',
     share: 'Share link',
     download: 'Download zip',
@@ -21,13 +40,21 @@ export const messages = {
     copied: 'Link copied',
     size: (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`,
   },
-  footer: 'EDGE V3.1 user guides. Inputs only. Savings are calculated in the EDGE App.',
+  footer: {
+    EDGE: 'EDGE V3.1 user guides. Inputs only. Savings are calculated in the EDGE App.',
+    CASA: 'CASA Colombia 3.1 (Edición 2026). Pre-check only. Credits are awarded by CCCS/GBCI on the Arc platform.',
+  } satisfies Record<Scheme, string>,
   guide: (doc: string, page: string) => `${doc} p.${page}`,
   empty: {
-    title: 'Check this model for EDGE',
-    lines: [
+    title: (schemes: readonly Scheme[]) => `Check this model for ${listed(schemes, SCHEME_NAME)}`,
+    lines: (schemes: readonly Scheme[]) => [
       'Reads walls, glazing, roofs, levels and rooms from the loaded view.',
-      'Measures the EDGE design inputs and the EEM01, EEM02 and EEM09 inputs, with the guide page next to each value.',
+      ...(schemes.includes('EDGE')
+        ? ['Measures the EDGE design inputs and the EEM01, EEM02 and EEM09 inputs, with the guide page next to each value.']
+        : []),
+      ...(schemes.includes('CASA')
+        ? ['Lists the CASA Colombia measures with the credits each one serves and its page in the CASA guide.']
+        : []),
       'Lists what the model cannot prove, so you confirm element types and exclusions before anything counts.',
     ],
   },
@@ -35,7 +62,7 @@ export const messages = {
   phase: {
     snapshot: 'Reading walls, glazing, roofs, levels and rooms from the model.',
     classifying: (n: number) => `Classifying ${n} ${n === 1 ? 'type' : 'types'} the rules could not settle.`,
-    measuring: 'Measuring the EDGE inputs.',
+    measuring: (schemes: readonly Scheme[]) => `Measuring the ${listed(schemes, SCHEME_SHORT)} inputs.`,
   },
   storedRun: (when: string) => `Last check, ${when}. Check again to read the model afresh.`,
   provisionalNote: 'Values are provisional until every pending type is confirmed.',
@@ -56,7 +83,7 @@ export const messages = {
   changeRole: 'Change role',
   elements: (n: number) => (n === 1 ? '1 element' : `${n} elements`),
   wwr: {
-    title: 'EEM01 Window-to-wall ratio',
+    title: 'Window-to-wall ratio',
     orientation: 'Orientation',
     wall: 'Wall m²',
     glazing: 'Glazing m²',
@@ -76,8 +103,37 @@ export const messages = {
     },
   },
   inputs: { title: 'Design inputs' },
+  casa: {
+    titles: {
+      'C-ENV': 'Envelope sheet',
+      'C-FLOOD': 'Flood and road grade',
+      'C-VENT': 'Natural ventilation and daylight',
+      'C-WATER': 'Water fixtures',
+      'C-FLEX': 'Non-structural partitions',
+      'C-SRI': 'Roof solar reflectance',
+      'C-GLAZE': 'Glazing light transmittance',
+    } satisfies Record<MeasureCodeOf<'CASA'>, string>,
+  },
+  blocked: {
+    notImplemented: 'Not measured yet. This CASA measure arrives in a later version of greenr.',
+    missingInput: (label: string) => `Needs ${label} under Project inputs.`,
+  },
+  credits: 'Serves',
   projectInputs: {
     title: 'Project inputs',
+    summary: (set: number, total: number) => `${set} of ${total} set`,
+    help: 'CASA and Res. 0194 read these values. greenr never takes them from the model or guesses them from the municipality.',
+    unset: 'Not set',
+    zoneHelp: 'Pick the zone yourself. A municipality can span several zones.',
+    geovisor: 'Minvivienda climate geovisor',
+    options: {
+      typology: { 'no-vis': 'No VIS', vis: 'VIS', vip: 'VIP' },
+      housingForm: { unifamiliar: 'Unifamiliar', multifamiliar: 'Multifamiliar' },
+      municipalityCategory: { E: 'Especial', '1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6' },
+      climateZone: { frio: 'Frío', templado: 'Templado', 'calido-seco': 'Cálido seco', 'calido-humedo': 'Cálido húmedo' },
+      floodReturnYears: { '50': '50 years', '100': '100 years' },
+      inFloodplain: { true: 'Yes', false: 'No' },
+    },
     fields: {
       typology: { label: 'Typology' },
       housingForm: { label: 'Housing form' },
@@ -134,7 +190,7 @@ export const messages = {
   },
   gaps: {
     title: 'Gaps',
-    none: 'No gaps. Every measured type carries the parameters EDGE asks for.',
+    none: (scheme: Scheme) => `No gaps. Every measured type carries the parameters ${SCHEME_NAME[scheme]} asks for.`,
     missing: (parameter: string) => `Missing ${parameter}`,
     severity: {
       'blocks-claim': 'Blocks the claim',

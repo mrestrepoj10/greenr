@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { fixtureRun } from '@/lib/export/fixture'
-import type { ElementRole, Exclusion, ExclusionReason } from '@/lib/edge/types'
+import { fixtureBothRun, fixtureRun } from '@/lib/export/fixture'
+import type { ElementRole, Exclusion, ExclusionReason, RunResult } from '@/lib/edge/types'
 import { citation } from '@/lib/edge/guide'
 import { agentExclusionId, edgeToolSpecs, type EdgeSession } from './edge-tools'
+import { GREENR_INSTRUCTIONS } from './instructions'
 import { askUserQuestionTool, QuestionBroker } from './question'
 import { createAgentTools, violation } from './registry'
 
-function fakeSession() {
+function fakeSession(run: RunResult = fixtureRun) {
   const proposals: Exclusion[] = []
   const roles: { typeKey: string; role: ElementRole }[] = []
   const session: EdgeSession = {
-    run: () => fixtureRun,
+    run: () => run,
     elementsOf: (typeKey) => (typeKey === 'Basic Wall / Generic - 200mm' ? [11, 12] : []),
     proposeExclusion: async ({ dbIds, reason, note }: { dbIds: number[]; reason: ExclusionReason; note: string }) => {
       const e: Exclusion = { id: agentExclusionId(reason, dbIds), dbIds, reason, source: 'agent', status: 'proposed', note }
@@ -32,17 +33,17 @@ describe('tool registry', () => {
   it('rejects unknown parameters and wrong enums before a tool runs', async () => {
     const { session } = fakeSession()
     const tools = createAgentTools(edgeToolSpecs(session)).asAgentTools()
-    const measure = tools.find((t) => t.name === 'edge_measure')!
+    const measure = tools.find((t) => t.name === 'check_measure')!
     await expect(measure.execute({ code: 'EEM99' }, { signal })).rejects.toThrow(/must be one of/)
     await expect(measure.execute({ code: 'EEM01', extra: 1 }, { signal })).rejects.toThrow(/not a parameter/)
     expect(violation({ type: 'array', items: { type: 'integer' }, maxItems: 2 }, [1, 2, 3])).toMatch(/at most 2/)
   })
 })
 
-describe('EDGE tools', () => {
+describe('check tools', () => {
   it('summarise the run with codes and guide pages and no element ids', async () => {
     const { session } = fakeSession()
-    const summary = await createAgentTools(edgeToolSpecs(session)).get('edge_run_summary')!.run({}, { signal })
+    const summary = await createAgentTools(edgeToolSpecs(session)).get('check_summary')!.run({}, { signal })
     const body = JSON.parse(summary.text)
     const eem01 = fixtureRun.measures.find((m) => m.code === 'EEM01')!.guide
     expect(body.measures.find((m: { code: string }) => m.code === 'EEM01').guide).toBe(citation(eem01))
@@ -52,7 +53,7 @@ describe('EDGE tools', () => {
 
   it('propose an exclusion from a saved set, with an id that repeats for the same elements', async () => {
     const { session, proposals } = fakeSession()
-    const tool = createAgentTools(edgeToolSpecs(session)).get('edge_propose_exclusion')!
+    const tool = createAgentTools(edgeToolSpecs(session)).get('propose_exclusion')!
     await tool.run({ setId: 'set-1', reason: 'massing', note: 'context blocks' }, { signal })
     await tool.run({ dbIds: [9, 8, 7], reason: 'massing', note: 'again' }, { signal })
     expect(proposals.map((p) => p.dbIds.length)).toEqual([3, 3])
@@ -62,10 +63,45 @@ describe('EDGE tools', () => {
 
   it('refuse a role for a type the check never saw', async () => {
     const { session, roles } = fakeSession()
-    const tool = createAgentTools(edgeToolSpecs(session)).get('edge_set_classification')!
+    const tool = createAgentTools(edgeToolSpecs(session)).get('propose_role')!
     await expect(tool.run({ typeKey: 'Nope', role: 'massing', reason: 'x' }, { signal })).rejects.toThrow(/No elements/)
     await tool.run({ typeKey: 'Basic Wall / Generic - 200mm', role: 'interior-wall', reason: 'core' }, { signal })
     expect(roles).toEqual([{ typeKey: 'Basic Wall / Generic - 200mm', role: 'interior-wall' }])
+  })
+})
+
+describe('check tools on an EDGE and CASA run', () => {
+  it('summarise both schemes, the project inputs, and each CASA measure with its credits, citation and blocker', async () => {
+    const { session } = fakeSession(fixtureBothRun)
+    const body = JSON.parse((await createAgentTools(edgeToolSpecs(session)).get('check_summary')!.run({}, { signal })).text)
+    expect(body.schemes).toEqual(['EDGE', 'CASA'])
+    expect(body.projectInputs).toEqual(fixtureBothRun.inputs)
+    const flood = body.measures.find((m: { code: string }) => m.code === 'C-FLOOD')
+    expect(flood).toMatchObject({
+      scheme: 'CASA',
+      credits: ['CCRp3', 'CCRc4'],
+      guide: 'CASA Colombia, 3.1 (Edición 2026), p. 68',
+      state: 'blocked',
+      blockedBy: [{ kind: 'missing-input', input: 'roadGradeM' }],
+    })
+    expect(body.measures.find((m: { code: string }) => m.code === 'EEM01')).toMatchObject({ scheme: 'EDGE', credits: ['EEM01'] })
+  })
+
+  it('read one CASA measure by its code', async () => {
+    const { session } = fakeSession(fixtureBothRun)
+    const result = await createAgentTools(edgeToolSpecs(session)).get('check_measure')!.run({ code: 'C-ENV' }, { signal })
+    expect(JSON.parse(result.text)).toMatchObject({ code: 'C-ENV', blockedBy: [{ kind: 'not-implemented' }] })
+    expect(result.detail).toBe('CASA Colombia, 3.1 (Edición 2026), p. 30')
+  })
+
+  it('the instructions name only tools that exist, and both schemes with a citation example each', () => {
+    const { session } = fakeSession()
+    const names = new Set(edgeToolSpecs(session).map((t) => t.name))
+    const mentioned = [...GREENR_INSTRUCTIONS.matchAll(/\b(check_\w+|propose_\w+)\b/g)].map((m) => m[1])
+    expect(mentioned.length).toBeGreaterThan(0)
+    for (const name of mentioned) expect(names.has(name), name).toBe(true)
+    expect(GREENR_INSTRUCTIONS).toContain('EDGE Part 3, V3.1, p. 11')
+    expect(GREENR_INSTRUCTIONS).toContain('CASA Colombia, 3.1 (Edición 2026), p. 68')
   })
 })
 

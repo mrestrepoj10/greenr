@@ -1,7 +1,6 @@
 import type { Exclusion, InputValue, MeasureBlocker, MeasureCode, RunResult, Scheme, Snapshot } from '@/lib/edge/types'
 import { messages } from '@/lib/ui/messages'
 
-/** Everything a pack says differently per scheme: where the values go, who decides, and the CSV it writes. */
 export type SchemeExport = {
   name: string
   inputsHeading: string

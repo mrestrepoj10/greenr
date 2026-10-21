@@ -65,12 +65,16 @@ export function useExportPack({ edge, getViewer, model, colouring }: UseExportPa
       clearTheming(viewer)
       ghostDbIds(viewer, edge.contextIds)
       colorByOrientation(viewer, rows)
-      const images = await captureElevations(viewer, {
-        dbIds: rows.flatMap((r) => [...r.wallDbIds, ...r.glazingDbIds]),
-        hide: edge.contextIds,
-        northAngleDeg: run.snapshot.north.angleDeg,
-        onSide: (side) => setStatus({ kind: 'capturing', side }),
-      })
+      const facade = rows.flatMap((r) => [...r.wallDbIds, ...r.glazingDbIds])
+      const images =
+        facade.length > 0
+          ? await captureElevations(viewer, {
+              dbIds: facade,
+              hide: edge.contextIds,
+              northAngleDeg: run.snapshot.north.angleDeg,
+              onSide: (side) => setStatus({ kind: 'capturing', side }),
+            })
+          : []
       setStatus({ kind: 'packing' })
       const pack = await buildPack(run, images, {
         projectName: model.name,

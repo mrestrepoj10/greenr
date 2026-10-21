@@ -9,7 +9,6 @@ import { buildPack } from './pack'
 import { measurePdf } from './pdf'
 import { placeholderPng } from './placeholder-png'
 
-/** The text a PDF draws, one string per text run, from its Flate content streams. */
 function pdfText(bytes: Uint8Array): string {
   const raw = strFromU8(bytes, true)
   const runs: string[] = []

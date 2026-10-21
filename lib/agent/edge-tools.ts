@@ -1,5 +1,6 @@
 import { citation } from '@/lib/edge/guide'
-import { ALL_MEASURE_CODES, ELEMENT_ROLES, EXCLUSION_REASONS } from '@/lib/edge/types'
+import { MEASURES } from '@/lib/edge/measures'
+import { ALL_MEASURE_CODES, ELEMENT_ROLES, EXCLUSION_REASONS, MEASURE_CODES } from '@/lib/edge/types'
 import type {
   ElementRole,
   Exclusion,
@@ -13,7 +14,7 @@ import { openExclusions, pendingTypes } from '@/lib/run/pipeline'
 import { messages } from '@/lib/ui/messages'
 import type { ToolSpec } from './registry'
 
-/** What the EDGE tools may read and propose. The person confirms everything in the panel. */
+/** What the check tools may read and propose. The person confirms everything in the panel. */
 export interface EdgeSession {
   run(): RunResult | null
   elementsOf(typeKey: string): number[]
@@ -35,16 +36,19 @@ function inputRow(i: InputValue) {
 }
 
 function noRun(): never {
-  throw new Error('No check has run yet. Ask the person to click Check for EDGE.')
+  throw new Error('No check has run yet. Ask the person to pick the schemes and click Check.')
 }
 
 function measureDigest(m: MeasureResult, full: boolean) {
   const inputs = full ? m.inputs : m.inputs.slice(0, MAX_SUMMARY_INPUTS)
   return {
     code: m.code,
+    scheme: MEASURES[m.code].scheme,
+    credits: MEASURES[m.code].credits,
     guide: cite(m),
     guideTitle: m.guide.title,
     state: m.state,
+    ...(m.blockedBy?.length ? { blockedBy: m.blockedBy } : {}),
     inputs: inputs.map(inputRow),
     ...(inputs.length < m.inputs.length ? { moreInputs: m.inputs.length - inputs.length } : {}),
     ...(m.orientations
@@ -96,9 +100,9 @@ export function edgeToolSpecs(session: EdgeSession): ToolSpec[] {
 
   return [
     {
-      name: 'edge_run_summary',
+      name: 'check_summary',
       description:
-        'The current EDGE check: run state, north, every measure with its EDGE code, guide part and page, state and first inputs, the WWR per orientation, gap and pending counts, and every exclusion with its status: proposed, accepted or rejected by the person. No element ids. Call this before you talk about any number.',
+        'The current check: run state, the schemes it measured with their guide versions, the project inputs, north, every measure with its code, scheme, credits, guide citation, state, what blocks it and its first inputs, the WWR per orientation, gap and pending counts, and every exclusion with its status: proposed, accepted or rejected by the person. No element ids. Call this before you talk about any number.',
       parameters: { type: 'object', properties: {}, additionalProperties: false },
       idempotent: true,
       mutates: false,
@@ -110,6 +114,7 @@ export function edgeToolSpecs(session: EdgeSession): ToolSpec[] {
             state: run.state,
             schemes: run.schemes,
             guides: run.guides,
+            projectInputs: run.inputs,
             view: run.snapshot.viewableName,
             units: run.snapshot.units,
             north: run.snapshot.north,
@@ -130,9 +135,8 @@ export function edgeToolSpecs(session: EdgeSession): ToolSpec[] {
       },
     },
     {
-      name: 'edge_measure',
-      description:
-        'One EDGE measure in full: every input with its source, the orientation rows, every gap with the missing parameter and element count, flags, pending types, and for EEM01 why walls and openings did or did not count. Codes: D-GIA, D-FLOORS, D-F2F, D-ROOF, EEM01, EEM02, EEM09, AU-SKYLIGHT.',
+      name: 'check_measure',
+      description: `One measure in full: its scheme and credits, every input with its source, what blocks it, the orientation rows, every gap with the missing parameter and element count, flags, pending types, and for EEM01 why walls and openings did or did not count. EDGE codes: ${MEASURE_CODES.EDGE.join(', ')}. CASA codes: ${MEASURE_CODES.CASA.join(', ')}. Only the schemes the run measured have results.`,
       parameters: {
         type: 'object',
         properties: { code: { type: 'string', enum: ALL_MEASURE_CODES } },
@@ -154,7 +158,7 @@ export function edgeToolSpecs(session: EdgeSession): ToolSpec[] {
       },
     },
     {
-      name: 'edge_pending',
+      name: 'check_pending',
       description:
         'What waits on the person: element types whose role is not confirmed (with the current answer, its source and confidence, and how many elements) and proposed exclusions not yet accepted (with reason, note and element count). The run stays provisional until both lists are empty.',
       parameters: { type: 'object', properties: {}, additionalProperties: false },
@@ -185,7 +189,7 @@ export function edgeToolSpecs(session: EdgeSession): ToolSpec[] {
       },
     },
     {
-      name: 'edge_propose_exclusion',
+      name: 'propose_exclusion',
       description:
         'Propose leaving elements out of the measures, for example massing or context walls, below-grade walls, party walls, parapets or unconditioned spaces. Pass dbIds or the setId of a set you found. It is only a proposal: it shows in the panel and changes nothing until the person accepts it. Proposing the same elements and reason again changes nothing.',
       parameters: {
@@ -221,9 +225,9 @@ export function edgeToolSpecs(session: EdgeSession): ToolSpec[] {
       },
     },
     {
-      name: 'edge_set_classification',
+      name: 'propose_role',
       description:
-        'Propose the EDGE role of one element type (typeKey as edge_pending lists it, "Family / Type"). The type turns pending with your role preselected; the measures use it only after the person confirms it in the panel.',
+        'Propose the envelope role of one element type (typeKey as check_pending lists it, "Family / Type"). The type turns pending with your role preselected; the measures use it only after the person confirms it in the panel.',
       parameters: {
         type: 'object',
         properties: {
@@ -241,7 +245,7 @@ export function edgeToolSpecs(session: EdgeSession): ToolSpec[] {
         const typeKey = args.typeKey as string
         const role = args.role as ElementRole
         if (session.elementsOf(typeKey).length === 0) {
-          throw new Error(`No elements of type "${typeKey}" in this check. Use the typeKey exactly as edge_pending lists it.`)
+          throw new Error(`No elements of type "${typeKey}" in this check. Use the typeKey exactly as check_pending lists it.`)
         }
         const ok = await session.proposeClassification(typeKey, role, args.reason as string)
         if (!ok) throw new Error('The proposal did not apply. Ask the person to check again.')

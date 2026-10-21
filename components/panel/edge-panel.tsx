@@ -1,22 +1,17 @@
 'use client'
 
-import { Palette } from 'lucide-react'
 import { type ReactNode, useCallback, useState } from 'react'
-import { CompassRose } from '@/components/panel/compass-rose'
 import { ConfirmationBlock } from '@/components/panel/confirmation-block'
-import { DesignInputs } from '@/components/panel/design-inputs'
 import { ExportResult } from '@/components/panel/export-result'
 import type { ExportView } from '@/components/panel/use-export-pack'
-import { GapsList } from '@/components/panel/gaps-list'
 import { InlineAlert } from '@/components/panel/inline-alert'
-import { MeasureSection } from '@/components/panel/measure-section'
 import { PanelEmpty, PanelSkeleton } from '@/components/panel/panel-empty'
 import { PanelHeader } from '@/components/panel/panel-header'
-import { WwrTable } from '@/components/panel/wwr-table'
-import { Button } from '@/components/ui/button'
+import { ProjectInputsForm } from '@/components/panel/project-inputs'
+import { SchemeResults } from '@/components/panel/scheme-results'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useViewer } from '@/components/viewer/viewer-bridge'
-import type { ElementRole, ExclusionStatus, RunResult, RunState } from '@/lib/edge/types'
+import type { ElementRole, ExclusionStatus, ProjectInputs, RunResult, RunScope, RunState, Scheme } from '@/lib/edge/types'
 import { decisions, pendingTypes } from '@/lib/run/pipeline'
 import { messages } from '@/lib/ui/messages'
 import { isolateDbIds } from '@/lib/viewer/color'
@@ -24,6 +19,10 @@ import { isolateDbIds } from '@/lib/viewer/color'
 export interface EdgePanelProps {
   run: RunResult | null
   state: RunState
+  /** The project's schemes and inputs. The run shows what it measured; the header and the form show this. */
+  scope: RunScope
+  onSchemesChange?: (schemes: Scheme[]) => void
+  onInputsChange?: (inputs: ProjectInputs) => void
   error?: string | null
   /** The phase line while a check runs, for example how many types are being classified. */
   progress?: string
@@ -51,6 +50,9 @@ const noElements = () => []
 export function EdgePanel({
   run,
   state,
+  scope,
+  onSchemesChange,
+  onInputsChange,
   error,
   progress,
   exportView,
@@ -79,18 +81,25 @@ export function EdgePanel({
     [selectedKey, run?.runId, viewer, isModelLoaded],
   )
 
-  const eem01 = run?.measures.find((m) => m.code === 'EEM01')
   const pending = run ? pendingTypes(run) : []
   const measuring = state === 'measuring' || state === 'snapshot' || state === 'classifying' || state === 'loading'
 
   return (
     <aside className="flex h-full min-h-0 flex-col bg-background" data-testid="edge-panel" data-state={state}>
-      <PanelHeader state={state} hasRun={run !== null} onCheck={onCheck} onExport={onExport} />
+      <PanelHeader
+        state={state}
+        hasRun={run !== null}
+        schemes={scope.schemes}
+        onSchemesChange={onSchemesChange}
+        onCheck={onCheck}
+        onExport={onExport}
+      />
       {error ? <InlineAlert>{error}</InlineAlert> : null}
       {exportView ? <ExportResult view={exportView} /> : null}
       <ScrollArea className="min-h-0 flex-1">
+        {scope.schemes.includes('CASA') ? <ProjectInputsForm inputs={scope.inputs} onChange={onInputsChange} /> : null}
         {measuring ? <PanelSkeleton status={progress} /> : null}
-        {!measuring && !run ? <PanelEmpty /> : null}
+        {!measuring && !run ? <PanelEmpty schemes={scope.schemes} /> : null}
         {!measuring && run ? (
           <>
             {origin === 'stored' ? (
@@ -112,42 +121,20 @@ export function EdgePanel({
               onUnconfirmType={onUnconfirmType}
               onDecideExclusion={onDecideExclusion}
             />
-            {eem01?.orientations ? (
-              <MeasureSection
-                title={messages.wwr.title}
-                guide={eem01.guide}
-                testId="eem01"
-                aside={
-                  colouring ? (
-                    <Button
-                      size="xs"
-                      variant={colouring.on ? 'secondary' : 'ghost'}
-                      aria-pressed={colouring.on}
-                      onClick={() => colouring.onChange(!colouring.on)}
-                      disabled={!isModelLoaded}
-                      data-testid="toggle-colour"
-                    >
-                      <Palette data-icon="inline-start" aria-hidden />
-                      {colouring.on ? messages.wwr.clearColour : messages.wwr.colour}
-                    </Button>
-                  ) : null
-                }
-              >
-                <WwrTable rows={eem01.orientations} selectedKey={selectedKey} onSelect={select} />
-                <CompassRose north={run.snapshot.north} onNorthChange={onNorthChange} />
-              </MeasureSection>
-            ) : null}
-            <MeasureSection title={messages.inputs.title} testId="design-inputs-section">
-              <DesignInputs measures={run.measures} selectedKey={selectedKey} onSelect={select} />
-            </MeasureSection>
-            <MeasureSection title={messages.gaps.title} testId="gaps-section">
-              <GapsList measures={run.measures} selectedKey={selectedKey} onSelect={select} />
-            </MeasureSection>
+            <SchemeResults
+              run={run}
+              selectedKey={selectedKey}
+              onSelect={select}
+              colouring={colouring ? { ...colouring, available: isModelLoaded } : undefined}
+              onNorthChange={onNorthChange}
+            />
           </>
         ) : null}
       </ScrollArea>
       {assistant}
-      <footer className="border-t px-4 py-2 text-[11px] leading-snug text-muted-foreground">{messages.footer}</footer>
+      <footer className="border-t px-4 py-2 text-[11px] leading-snug text-muted-foreground">
+        {scope.schemes.map((scheme) => messages.footer[scheme]).join(' ')}
+      </footer>
     </aside>
   )
 }

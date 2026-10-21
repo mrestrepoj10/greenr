@@ -172,7 +172,6 @@ export type RunState = (typeof RUN_STATES)[number]
 export const SCHEMES = ['EDGE', 'CASA'] as const
 export type Scheme = (typeof SCHEMES)[number]
 
-/** Each scheme owns its measure codes, in the order a run lists them. */
 export const MEASURE_CODES = {
   EDGE: ['D-GIA', 'D-FLOORS', 'D-F2F', 'D-ROOF', 'EEM01', 'EEM02', 'EEM09', 'AU-SKYLIGHT'],
   CASA: ['C-ENV', 'C-FLOOD', 'C-VENT', 'C-WATER', 'C-FLEX', 'C-SRI', 'C-GLAZE'],
@@ -183,8 +182,9 @@ export const ALL_MEASURE_CODES = [...MEASURE_CODES.EDGE, ...MEASURE_CODES.CASA] 
 
 const SCHEME_OF = Object.fromEntries(SCHEMES.flatMap((s) => MEASURE_CODES[s].map((code) => [code, s]))) as Record<MeasureCode, Scheme>
 export const schemeOf = (code: MeasureCode): Scheme => SCHEME_OF[code]
+export const isCodeOf = <S extends Scheme>(scheme: S, code: MeasureCode): code is MeasureCodeOf<S> => SCHEME_OF[code] === scheme
 
-/** A page of a published document: an EDGE user guide part, the CASA Colombia guide or a Minvivienda act. `page` is the printed page; `url` opens the PDF there. */
+/** `page` is the printed page; `url` opens the PDF at it, past any cover. */
 export type GuideRef = {
   doc: string
   version: string
@@ -358,7 +358,6 @@ export type MeasureResult = {
   envelope?: { walls: WallEvidence[]; openings: OpeningEvidence[] }
 }
 
-/** Which schemes a run measures and the project inputs it reads. */
 export type RunScope = {
   schemes: Scheme[]
   inputs: ProjectInputs

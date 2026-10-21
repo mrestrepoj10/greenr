@@ -13,7 +13,6 @@ function fnv1a(s: string): string {
 
 const snapshotKey = (s: Pick<Snapshot, 'modelUrn' | 'viewableGuid' | 'takenAt'>) => `${s.modelUrn}|${s.viewableGuid}|${s.takenAt}`
 
-/** A new project measures EDGE only and has typed nothing yet. */
 export const DEFAULT_SCOPE: RunScope = { schemes: ['EDGE'], inputs: {} }
 
 /**

@@ -1,12 +1,13 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import type { Scheme } from '@/lib/edge/types'
 import { messages } from '@/lib/ui/messages'
 
-export function PanelEmpty() {
+export function PanelEmpty({ schemes }: { schemes: readonly Scheme[] }) {
   return (
     <div className="flex flex-col gap-3 border-t px-4 py-6" data-testid="panel-empty">
-      <h2 className="text-sm font-medium">{messages.empty.title}</h2>
+      <h2 className="text-sm font-medium">{messages.empty.title(schemes)}</h2>
       <ol className="flex flex-col gap-2 text-sm text-muted-foreground">
-        {messages.empty.lines.map((line, i) => (
+        {messages.empty.lines(schemes).map((line, i) => (
           <li key={line} className="flex gap-3">
             <span className="w-4 shrink-0 text-right tabular-nums">{i + 1}</span>
             <span>{line}</span>

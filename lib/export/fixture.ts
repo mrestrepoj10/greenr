@@ -236,7 +236,6 @@ const casaMeasures: MeasureResult[] = [
   },
 ]
 
-/** The same project checked for EDGE and CASA, with the inputs a Colombian VIS project types. */
 export const fixtureBothRun: RunResult = {
   ...fixtureRun,
   schemes: ['EDGE', 'CASA'],

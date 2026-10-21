@@ -108,8 +108,11 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
           <EdgePanel
             run={run}
             state={edge.state}
+            scope={scope}
+            onSchemesChange={project && (isModelLoaded || !run) ? edge.setSchemes : undefined}
+            onInputsChange={project && (isModelLoaded || !run) ? edge.setInputs : undefined}
             error={edge.error}
-            progress={phaseMessage(edge.phase)}
+            progress={phaseMessage(edge.phase, scope.schemes)}
             exportView={pack.view}
             origin={edge.origin}
             elementsOf={edge.elementsOf}

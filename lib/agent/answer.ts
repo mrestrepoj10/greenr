@@ -5,7 +5,7 @@ import { ALL_MEASURE_CODES, ORIENTATIONS } from '@/lib/edge/types'
 
 /**
  * The answer cards the agent composes. Cards that show numbers take a measure code and read the value from the
- * current run, so every number on a card is the engine's, with its EDGE code and guide page.
+ * current run, so every number on a card is the engine's, with its measure code and guide page.
  */
 export const answerCatalog = defineCatalog(schema, {
   components: {
@@ -17,7 +17,7 @@ export const answerCatalog = defineCatalog(schema, {
     stat: {
       props: z.object({ code: z.enum(ALL_MEASURE_CODES), input: z.string().max(200) }),
       description:
-        'One measured input from the run, shown with its EDGE code and guide page. input is the label exactly as edge_run_summary or edge_measure lists it, for example "Overall window-to-wall ratio".',
+        'One measured input from the run, shown with its measure code and guide page. input is the label exactly as check_summary or check_measure lists it, for example "Overall window-to-wall ratio".',
     },
     orientation_table: {
       props: z.object({ highlight: z.array(z.enum(ORIENTATIONS)).max(8).nullable().optional() }),
@@ -25,7 +25,7 @@ export const answerCatalog = defineCatalog(schema, {
     },
     gap_list: {
       props: z.object({ measure: z.enum(ALL_MEASURE_CODES).nullable().optional(), limit: z.number().int().min(1).max(20).nullable().optional() }),
-      description: 'Gaps from the run: types missing a parameter EDGE asks for, each with its element count. Clicking a gap selects its elements.',
+      description: 'Gaps from the run: types missing a parameter the scheme asks for, each with its element count. Clicking a gap selects its elements.',
     },
     element_chips: {
       props: z.object({
@@ -52,7 +52,7 @@ export const answerCatalog = defineCatalog(schema, {
     },
     link: {
       props: z.object({ label: z.string().max(120), href: z.string().url().startsWith('https://') }),
-      description: 'A link, for example to the EDGE guide page that a tool returned.',
+      description: 'A link, for example to the guide page that a tool returned.',
     },
   },
   actions: {},
@@ -67,7 +67,7 @@ export const ANSWER_INSTRUCTIONS = `Answer format
   .map(([name, c]) => `${name} (${c.description})`)
   .join('; ')}.
 - Props of each: note {text, tone?: "info"|"warning"}; stat {code, input}; orientation_table {highlight?: ["N",...]}; gap_list {measure?, limit?}; element_chips {chips: [{label, dbIds? | setId?}]}; compass {}; question {text, options: [..]}; link {label, href}.
-- Use at most six cards. Never put a number in a note without its EDGE code and guide page; prefer a stat card, which carries them.
+- Use at most six cards. Never put a number in a note without its measure code and guide page; prefer a stat card, which carries them.
 - Example: {"root":"a","elements":{"a":{"type":"note","props":{"text":"South has the highest window-to-wall ratio."},"children":["b","c"]},"b":{"type":"stat","props":{"code":"EEM01","input":"Overall window-to-wall ratio"}},"c":{"type":"orientation_table","props":{"highlight":["S"]}}}}`
 
 /** Leaf cards may leave out `children`; the catalog schema wants the array. */

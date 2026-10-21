@@ -77,7 +77,7 @@ class EdgeBox {
   }
 }
 
-/** One registry for the chat panel and the dev terminal: the viewer kit subset, the EDGE tools and the question tool. */
+/** One registry for the chat panel and the dev terminal: the viewer kit subset, the check tools and the question tool. */
 export function createGreenrTools(
   getViewer: () => APSViewer3D | null,
   session: () => EdgeRun,
@@ -101,7 +101,7 @@ export function createGreenrTools(
       return run(...args)
     }) as T
   const edgeSpecs = edgeToolSpecs(edge).map((spec) =>
-    spec.name === 'edge_pending' || spec.name === 'edge_set_classification' ? { ...spec, run: withSnapshot(spec.run) } : spec,
+    spec.name === 'check_pending' || spec.name === 'propose_role' ? { ...spec, run: withSnapshot(spec.run) } : spec,
   )
   const registry = createAgentTools([
     ...kit.tools.filter((tool) => KIT_TOOLS.has(tool.name)).map(fromKitTool),
@@ -132,7 +132,7 @@ export interface EdgeAgentProps {
   greenr: GreenrTools
 }
 
-/** The assistant at the bottom of the EDGE panel: transcript with tool rows, inline questions, composer. */
+/** The assistant at the bottom of the panel: transcript with tool rows, inline questions, composer. */
 export function EdgeAgentSection({ edge, getViewer, slug, greenr }: EdgeAgentProps) {
   const { kit, registry, broker } = greenr
   const tools = useMemo(() => ({ ...kit, tools: registry.asAgentTools(), instructions: '' }), [kit, registry])

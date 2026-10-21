@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { groupByType } from '@/lib/classify'
 import { computeRun } from '@/lib/edge/run'
-import type { ElementRole, ExclusionStatus, RunResult, RunScope, RunState, Snapshot } from '@/lib/edge/types'
+import type { ElementRole, ExclusionStatus, ProjectInputs, RunResult, RunScope, RunState, Scheme, Snapshot } from '@/lib/edge/types'
 import {
   useClassifications,
   useConfirmType,
@@ -11,7 +11,9 @@ import {
   useExclusions,
   useLatestRun,
   useSaveRun,
+  useSetInputs,
   useSetNorth,
+  useSetSchemes,
   useUnconfirmType,
   type ProjectId,
   type RunDocId,
@@ -66,14 +68,14 @@ export function runStateOf(phase: EdgeRunPhase, run: RunResult | null): RunState
   return run?.state ?? 'idle'
 }
 
-export function phaseMessage(phase: EdgeRunPhase): string | undefined {
+export function phaseMessage(phase: EdgeRunPhase, schemes: readonly Scheme[]): string | undefined {
   switch (phase.kind) {
     case 'snapshot':
       return messages.phase.snapshot
     case 'classifying':
       return messages.phase.classifying(phase.types)
     case 'measuring':
-      return messages.phase.measuring
+      return messages.phase.measuring(schemes)
   }
 }
 
@@ -92,7 +94,6 @@ export interface UseEdgeRunOptions {
   getViewer: () => APSViewer3D | null
   /** True north the person set for this project, in degrees. Undefined uses the model's own. */
   userNorth?: number
-  /** The schemes and project inputs every check and recompute measures with. */
   scope: RunScope
 }
 
@@ -110,6 +111,8 @@ export function useEdgeRun({ projectId, getViewer, userNorth, scope }: UseEdgeRu
   const unconfirmTypeRow = useUnconfirmType()
   const decideExclusionRow = useDecideExclusion()
   const setNorthRow = useSetNorth()
+  const setSchemesRow = useSetSchemes()
+  const setInputsRow = useSetInputs()
 
   const run = store.live ?? stored?.run ?? null
   const runDocId = stored && run && stored.run.runId === run.runId ? stored.runDocId : null
@@ -138,7 +141,8 @@ export function useEdgeRun({ projectId, getViewer, userNorth, scope }: UseEdgeRu
 
   const requireViewer = useCallback(() => {
     const viewer = getViewer()
-    if (!viewer?.model) throw new Error(messages.errors.viewerNotReady)
+    // A snapshot read mid-load measures whatever geometry is resident, so every read waits for the whole model.
+    if (!viewer?.model?.isLoadDone()) throw new Error(messages.errors.viewerNotReady)
     return viewer
   }, [getViewer])
 
@@ -293,6 +297,38 @@ export function useEdgeRun({ projectId, getViewer, userNorth, scope }: UseEdgeRu
     [adopt, commit, requireViewer, setNorthRow],
   )
 
+  /** A new scope applies to the next check at once and remeasures the run on screen, reading the model first if only a stored run is loaded. */
+  const rescope = useCallback(
+    async (scope: RunScope) => {
+      context.current = { ...context.current, scope }
+      if (!latest.current) return null
+      if (!snapshotRef.current) {
+        dispatch({ type: 'phase', phase: { kind: 'snapshot' } })
+        await nextPaint()
+      }
+      return recompute((r) => ({ classifications: r.classifications, exclusions: r.exclusions }))
+    },
+    [recompute],
+  )
+
+  const setSchemes = useCallback(
+    (schemes: Scheme[]) => {
+      const id = context.current.projectId
+      if (id) setSchemesRow(id, schemes).catch(() => dispatch({ type: 'failed', message: messages.errors.saveFailed }))
+      return rescope({ ...context.current.scope, schemes })
+    },
+    [rescope, setSchemesRow],
+  )
+
+  const setInputs = useCallback(
+    (inputs: ProjectInputs) => {
+      const id = context.current.projectId
+      if (id) setInputsRow(id, inputs).catch(() => dispatch({ type: 'failed', message: messages.errors.saveFailed }))
+      return rescope({ ...context.current.scope, inputs })
+    },
+    [rescope, setInputsRow],
+  )
+
   /** Marks the run exported and resolves to its stored document once the save lands. */
   const markExported = useCallback(() => {
     const base = latest.current
@@ -322,6 +358,8 @@ export function useEdgeRun({ projectId, getViewer, userNorth, scope }: UseEdgeRu
     unconfirmType,
     decideExclusion,
     setNorth,
+    setSchemes,
+    setInputs,
     markExported,
     proposeExclusion,
     proposeClassification,

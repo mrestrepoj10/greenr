@@ -1,7 +1,6 @@
 import { ORIENTATIONS, schemeOf, type OrientationRow, type RunResult, type Scheme } from '@/lib/edge/types'
 import { formatValue } from './manifest'
 
-/** One table in a scheme's CSV: a header row and its rows. Blocks are separated by a blank line. */
 export type CsvBlock = { header: readonly string[]; rows: string[][] }
 
 export const DESIGN_INPUTS_HEADER = ['measure', 'label', 'value', 'unit', 'source', 'guide_doc', 'guide_page'] as const

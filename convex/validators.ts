@@ -209,7 +209,6 @@ export const projectFields = {
   northSource,
 }
 
-/** What the person chose for the project: the schemes every check measures and the inputs CASA reads. */
 export const projectScopeFields = {
   schemes: v.array(scheme),
   inputs: projectInputs,

@@ -11,7 +11,7 @@ const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin']
 
 export const metadata: Metadata = {
   title: 'greenr',
-  description: 'EDGE design inputs measured from a Revit model',
+  description: 'EDGE and CASA Colombia inputs measured from a Revit model',
 }
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

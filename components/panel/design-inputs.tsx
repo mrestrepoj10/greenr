@@ -2,11 +2,9 @@
 
 import { GuideLink } from '@/components/panel/measure-section'
 import { cn } from '@/lib/utils'
-import type { MeasureCode, MeasureResult } from '@/lib/edge/types'
+import type { MeasureResult } from '@/lib/edge/types'
 import { formatValue } from '@/lib/ui/format'
 import { messages } from '@/lib/ui/messages'
-
-const INPUT_MEASURES: readonly MeasureCode[] = ['D-GIA', 'D-FLOORS', 'D-F2F', 'D-ROOF', 'AU-SKYLIGHT']
 
 export interface DesignInputsProps {
   measures: MeasureResult[]
@@ -15,12 +13,9 @@ export interface DesignInputsProps {
 }
 
 export function DesignInputs({ measures, selectedKey, onSelect }: DesignInputsProps) {
-  const shown = INPUT_MEASURES.map((code) => measures.find((m) => m.code === code)).filter(
-    (m): m is MeasureResult => m !== undefined,
-  )
   return (
     <dl className="flex flex-col divide-y text-sm" data-testid="design-inputs">
-      {shown.flatMap((measure) =>
+      {measures.flatMap((measure) =>
         measure.inputs.map((input, i) => {
           const key = `input:${measure.code}:${i}`
           const clickable = (input.dbIds?.length ?? 0) > 0

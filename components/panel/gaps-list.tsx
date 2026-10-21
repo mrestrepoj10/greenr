@@ -2,7 +2,7 @@
 
 import { GuideLink } from '@/components/panel/measure-section'
 import { cn } from '@/lib/utils'
-import type { Gap, MeasureResult } from '@/lib/edge/types'
+import type { Gap, MeasureResult, Scheme } from '@/lib/edge/types'
 import { messages } from '@/lib/ui/messages'
 
 const SEVERITY_DOT: Record<Gap['severity'], string> = {
@@ -12,14 +12,15 @@ const SEVERITY_DOT: Record<Gap['severity'], string> = {
 }
 
 export interface GapsListProps {
+  scheme: Scheme
   measures: MeasureResult[]
   selectedKey: string | null
   onSelect: (key: string, dbIds: number[]) => void
 }
 
-export function GapsList({ measures, selectedKey, onSelect }: GapsListProps) {
+export function GapsList({ scheme, measures, selectedKey, onSelect }: GapsListProps) {
   const gaps = measures.flatMap((m) => m.gaps.map((gap) => ({ gap, guide: m.guide })))
-  if (gaps.length === 0) return <p className="text-sm text-muted-foreground">{messages.gaps.none}</p>
+  if (gaps.length === 0) return <p className="text-sm text-muted-foreground">{messages.gaps.none(scheme)}</p>
   return (
     <ul className="flex flex-col divide-y" data-testid="gaps-list">
       {gaps.map(({ gap, guide }) => {
