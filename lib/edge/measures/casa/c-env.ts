@@ -8,6 +8,7 @@ import type { Element, InputValue, Measure, ValueSource } from '../../types'
 import { deriveUnits } from '../../units'
 import { buildingOf } from '../building'
 import { tallyFacade } from '../eem01'
+import { labelFamily } from '../labels'
 import { measureResult } from '../result'
 
 export const C_ENV_LABELS = {
@@ -27,6 +28,13 @@ export const C_ENV_LABELS = {
   glazingShgc: 'Glazing SHGC, area-weighted over types with a value',
   wallU: 'Exterior wall U, area-weighted over types with a value',
   roofU: 'Roof U, area-weighted over types with a value',
+} as const
+
+/** One row per glazing, exterior wall and roof type, after the building-wide values. */
+export const C_ENV_TYPES = {
+  glazing: labelFamily('Glazing type: '),
+  wall: labelFamily('Exterior wall type: '),
+  roof: labelFamily('Roof type: '),
 } as const
 
 type Typed = { typeKey: string; dbIds: number[]; areaM2: number; u: number | null }
@@ -115,9 +123,9 @@ export const C_ENV: Measure = {
       { label: L.glazingShgc, value: areaWeighted(glazing.types, (t) => t.shgc), unit: 'ratio', source: 'parameter' },
       { label: L.wallU, value: areaWeighted(walls, (t) => t.u), unit: 'W/m²K', source: 'parameter' },
       { label: L.roofU, value: areaWeighted(roofs, (t) => t.u), unit: 'W/m²K', source: 'parameter' },
-      ...glazing.types.map((t): InputValue => ({ label: `Glazing type: ${t.typeKey}`, value: glazingText(t), unit: 'U W/m²K, SHGC, VT', source: 'parameter', dbIds: t.dbIds })),
-      ...walls.map((t): InputValue => ({ label: `Exterior wall type: ${t.typeKey}`, value: t.u, unit: 'W/m²K', source: 'parameter', dbIds: t.dbIds })),
-      ...roofs.map((t): InputValue => ({ label: `Roof type: ${t.typeKey}`, value: t.u, unit: 'W/m²K', source: 'parameter', dbIds: t.dbIds })),
+      ...glazing.types.map((t): InputValue => ({ label: C_ENV_TYPES.glazing.of(t.typeKey), value: glazingText(t), unit: 'U W/m²K, SHGC, VT', source: 'parameter', dbIds: t.dbIds })),
+      ...walls.map((t): InputValue => ({ label: C_ENV_TYPES.wall.of(t.typeKey), value: t.u, unit: 'W/m²K', source: 'parameter', dbIds: t.dbIds })),
+      ...roofs.map((t): InputValue => ({ label: C_ENV_TYPES.roof.of(t.typeKey), value: t.u, unit: 'W/m²K', source: 'parameter', dbIds: t.dbIds })),
     )
     pending.push(pendingFor(scope, [...windows.involved, ...shading.involved, ...glazing.involved, ...exterior.involved]))
 

@@ -12,12 +12,14 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { ProjectViewer } from '@/components/viewer/project-viewer'
 import { StageLegend } from '@/components/viewer/stage-legend'
 import { useViewer, ViewerBridgeProvider } from '@/components/viewer/viewer-bridge'
+import { elevationZeroZ } from '@/lib/edge/casa/elevation'
 import { DEFAULT_SCOPE } from '@/lib/edge/run'
-import type { OrientationRow, RunScope } from '@/lib/edge/types'
+import type { OrientationRow, RunScope, Snapshot } from '@/lib/edge/types'
 import type { BucketModel } from '@/lib/models/types'
 import { useProject, useUpsertProject } from '@/lib/persist/hooks'
 import { messages } from '@/lib/ui/messages'
 import { clearTheming, colorByOrientation, ghostDbIds } from '@/lib/viewer/color'
+import { hideFloodPlane, showFloodPlane } from '@/lib/viewer/flood-plane'
 
 export interface ProjectWorkspaceProps {
   model: BucketModel
@@ -70,6 +72,14 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
   const colourOn = run !== null && colourOffFor !== run.runId
   const setColourOn = (on: boolean) => setColourOffFor(on ? null : (run?.runId ?? null))
 
+  // The flood plane shows whenever CASA ran and a flood elevation is typed, until the person hides it.
+  const [floodHidden, setFloodHidden] = useState(false)
+  const floodElevation = scope.inputs.floodElevationM
+  const floodLevelZ = floodElevation === undefined ? undefined : floodElevation - (scope.inputs.datumOffsetM ?? 0)
+  const floodOn = floodLevelZ !== undefined && !floodHidden && run !== null && run.schemes.includes('CASA')
+
+  const onInputsAllowed = project !== null && (isModelLoaded || !run)
+
   const rows = run?.measures.find((m) => m.code === 'EEM01')?.orientations
   const pack = useExportPack({ edge, getViewer, model, colouring: colourOn && rows !== undefined })
   const greenr = useGreenrTools(edge, getViewer)
@@ -100,6 +110,7 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
               ghost={colourOn ? edge.contextIds : undefined}
               onClear={() => setColourOn(false)}
             />
+            <StageFloodPlane levelZ={floodOn ? floodLevelZ : undefined} ensureSnapshot={edge.ensureSnapshot} />
             {dev ? <DevTerminal greenr={greenr} /> : null}
           </ProjectViewer>
         </ResizablePanel>
@@ -110,7 +121,7 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
             state={edge.state}
             scope={scope}
             onSchemesChange={project && (isModelLoaded || !run) ? edge.setSchemes : undefined}
-            onInputsChange={project && (isModelLoaded || !run) ? edge.setInputs : undefined}
+            onInputsChange={onInputsAllowed ? edge.setInputs : undefined}
             error={edge.error}
             progress={phaseMessage(edge.phase, scope.schemes)}
             exportView={pack.view}
@@ -123,6 +134,7 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
             onDecideExclusion={edge.decideExclusion}
             onNorthChange={edge.setNorth}
             onExport={pack.busy ? undefined : pack.exportPack}
+            floodPlane={{ on: floodOn, onChange: (on) => setFloodHidden(!on), available: floodLevelZ !== undefined }}
             assistant={<EdgeAgentSection edge={edge} getViewer={getViewer} slug={model.slug} greenr={greenr} />}
           />
         </ResizablePanel>
@@ -164,4 +176,25 @@ function StageColouring({
   }, [viewer, isModelLoaded, rows, ghost])
 
   return active ? <StageLegend onClear={onClear} /> : null
+}
+
+/** The flood elevation drawn as a plane, `levelZ` metres above level elevation 0. The snapshot gives that datum's model z. */
+function StageFloodPlane({ levelZ, ensureSnapshot }: { levelZ: number | undefined; ensureSnapshot: () => Promise<Snapshot> }) {
+  const { viewer, isModelLoaded } = useViewer()
+
+  useEffect(() => {
+    if (!viewer || !isModelLoaded || levelZ === undefined) return
+    let live = true
+    ensureSnapshot()
+      .then((snapshot) => {
+        if (live) showFloodPlane(viewer, elevationZeroZ(snapshot) + levelZ)
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+      hideFloodPlane(viewer)
+    }
+  }, [viewer, isModelLoaded, levelZ, ensureSnapshot])
+
+  return null
 }

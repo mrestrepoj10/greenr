@@ -91,6 +91,13 @@ export const RES_0194 = {
   mscMeasures: anexo3(41, 'MS&C form §3 Medidas: solar protection glass and roof, low-flow fixtures'),
 } satisfies Record<string, GuideRef>
 
+/** The page each credit a measure serves cites: the CASA credit, or the MS&C form section. */
+export const CREDIT_GUIDES: Record<string, GuideRef> = {
+  ...CASA_CREDITS,
+  'MS&C §2': RES_0194.msc,
+  'MS&C §3': RES_0194.mscMeasures,
+}
+
 /** The MS&C web form's fields as Anexo 3 §7.2 numbers and explains them, by printed page. */
 export const MSC_PAGES = {
   21: anexo3(21, 'MS&C §7.2 fields 1 to 10: project type, climate zone, built area'),

@@ -1,9 +1,10 @@
-import { fixtureKindOf, NTC_1500, NTC_1500_GUIDE, type FixtureKind } from '../../casa/ntc1500'
+import { FIXTURE_KINDS, fixtureKindOf, NTC_1500, NTC_1500_GUIDE, type FixtureKind } from '../../casa/ntc1500'
 import { pendingFor, scopeOf, select, typeGap } from '../../casa/scope'
 import { GUIDE } from '../../guide'
 import { positive } from '../../params'
 import type { Element, Gap, InputValue, Measure, MeasureBlocker, MeasureFlag } from '../../types'
 import { deriveUnits, occupantsOf } from '../../units'
+import { labelFamily, type LabelFamily } from '../labels'
 import { measureResult } from '../result'
 
 export const C_WATER_LABELS = {
@@ -11,6 +12,9 @@ export const C_WATER_LABELS = {
   units: 'Dwelling units',
   occupants: 'Occupants, bedrooms plus one per unit',
 } as const
+
+/** One input per fixture type NTC 1500 caps: its flow or flush, null when the type carries no parameter for it. */
+export const FIXTURE_ROWS = Object.fromEntries(FIXTURE_KINDS.map((k) => [k, labelFamily(`${NTC_1500[k].label}: `)])) as Record<FixtureKind, LabelFamily>
 
 /** The worst fixture of a kind, the value the MS&C form asks per fixture kind. */
 export const highestLabel = (kind: FixtureKind): string => `Highest ${NTC_1500[kind].unit === 'L/min' ? 'flow' : 'flush'}, ${NTC_1500[kind].label}`
@@ -54,7 +58,7 @@ export const C_WATER: Measure = {
       }
       const cap = NTC_1500[kind]
       const value = cap.params.map((name) => positive(list[0].params, name)).find((v) => v !== null) ?? null
-      inputs.push({ label: `${cap.label}: ${typeKey}`, value, unit: cap.unit, source: 'parameter', dbIds })
+      inputs.push({ label: FIXTURE_ROWS[kind].of(typeKey), value, unit: cap.unit, source: 'parameter', dbIds })
       if (value === null) {
         const pressure = cap.testPsi ? ` at ${cap.testPsi} psi` : ''
         const parameter = cap.params.join(' or ')

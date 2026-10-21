@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { GuideLink } from '@/components/panel/measure-section'
 import { cn } from '@/lib/utils'
 import type { Gap, MeasureResult, Scheme } from '@/lib/edge/types'
@@ -16,14 +17,18 @@ export interface GapsListProps {
   measures: MeasureResult[]
   selectedKey: string | null
   onSelect: (key: string, dbIds: number[]) => void
+  /** Rows shown before a "show more" button. */
+  limit?: number
 }
 
-export function GapsList({ scheme, measures, selectedKey, onSelect }: GapsListProps) {
+export function GapsList({ scheme, measures, selectedKey, onSelect, limit = Infinity }: GapsListProps) {
+  const [all, setAll] = useState(false)
   const gaps = measures.flatMap((m) => m.gaps.map((gap) => ({ gap, guide: m.guide })))
   if (gaps.length === 0) return <p className="text-sm text-muted-foreground">{messages.gaps.none(scheme)}</p>
+  const shown = all ? gaps : gaps.slice(0, limit)
   return (
     <ul className="flex flex-col divide-y" data-testid="gaps-list">
-      {gaps.map(({ gap, guide }) => {
+      {shown.map(({ gap, guide }) => {
         const key = `gap:${gap.id}`
         return (
           <li key={gap.id}>
@@ -60,6 +65,13 @@ export function GapsList({ scheme, measures, selectedKey, onSelect }: GapsListPr
           </li>
         )
       })}
+      {shown.length < gaps.length ? (
+        <li>
+          <button type="button" onClick={() => setAll(true)} className="py-2 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+            {messages.casa.more(gaps.length - shown.length)}
+          </button>
+        </li>
+      ) : null}
     </ul>
   )
 }

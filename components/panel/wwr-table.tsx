@@ -10,11 +10,13 @@ export interface WwrTableProps {
   rows: OrientationRow[]
   selectedKey: string | null
   onSelect: (key: string, dbIds: number[]) => void
+  /** Keeps two tables on one page apart: selection keys and test ids carry it. */
+  name?: string
 }
 
-export function WwrTable({ rows, selectedKey, onSelect }: WwrTableProps) {
+export function WwrTable({ rows, selectedKey, onSelect, name = 'wwr' }: WwrTableProps) {
   return (
-    <table className="w-full text-sm" data-testid="wwr-table">
+    <table className="w-full text-sm" data-testid={`${name}-table`}>
       <thead>
         <tr className="text-xs text-muted-foreground">
           <th scope="col" className="py-1 text-left font-normal">
@@ -33,12 +35,12 @@ export function WwrTable({ rows, selectedKey, onSelect }: WwrTableProps) {
       </thead>
       <tbody className="tabular-nums">
         {rows.map((row) => {
-          const key = `wwr:${row.orientation}`
+          const key = `${name}:${row.orientation}`
           const noFacade = row.wwr === null
           return (
             <tr
               key={row.orientation}
-              data-testid="wwr-row"
+              data-testid={`${name}-row`}
               data-orientation={row.orientation}
               aria-selected={selectedKey === key}
               onClick={() => (noFacade ? undefined : onSelect(key, [...row.wallDbIds, ...row.glazingDbIds]))}

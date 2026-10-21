@@ -1,6 +1,7 @@
 'use client'
 
 import { type ReactNode, useCallback, useState } from 'react'
+import type { FloodPlaneToggle } from '@/components/panel/casa-results'
 import { ConfirmationBlock } from '@/components/panel/confirmation-block'
 import { ExportResult } from '@/components/panel/export-result'
 import type { ExportView } from '@/components/panel/use-export-pack'
@@ -41,6 +42,7 @@ export interface EdgePanelProps {
   onDecideExclusion?: (id: string, status: ExclusionStatus) => void
   onNorthChange?: (angleDeg: number) => void
   onExport?: () => void
+  floodPlane?: FloodPlaneToggle
   /** The assistant section, docked under the results. */
   assistant?: ReactNode
 }
@@ -65,6 +67,7 @@ export function EdgePanel({
   onDecideExclusion,
   onNorthChange,
   onExport,
+  floodPlane,
   assistant,
 }: EdgePanelProps) {
   const { viewer, isModelLoaded } = useViewer()
@@ -127,6 +130,9 @@ export function EdgePanel({
               onSelect={select}
               colouring={colouring ? { ...colouring, available: isModelLoaded } : undefined}
               onNorthChange={onNorthChange}
+              inputs={scope.inputs}
+              onInputsChange={onInputsChange}
+              floodPlane={floodPlane ? { ...floodPlane, available: isModelLoaded } : undefined}
             />
           </>
         ) : null}

@@ -2,6 +2,7 @@
 
 import { Palette } from 'lucide-react'
 import type { ComponentType } from 'react'
+import { CasaResults, type FloodPlaneToggle } from '@/components/panel/casa-results'
 import { CompassRose } from '@/components/panel/compass-rose'
 import { DesignInputs } from '@/components/panel/design-inputs'
 import { GapsList } from '@/components/panel/gaps-list'
@@ -9,8 +10,8 @@ import { MeasureSection } from '@/components/panel/measure-section'
 import { WwrTable } from '@/components/panel/wwr-table'
 import { Button } from '@/components/ui/button'
 import { MEASURES } from '@/lib/edge/measures'
-import { isCodeOf, schemeOf, type MeasureCode, type MeasureResult, type RunResult, type Scheme } from '@/lib/edge/types'
-import { blockerText, messages } from '@/lib/ui/messages'
+import { schemeOf, type MeasureCode, type MeasureResult, type ProjectInputs, type RunResult, type Scheme } from '@/lib/edge/types'
+import { messages } from '@/lib/ui/messages'
 
 const DESIGN_INPUT_CODES: readonly MeasureCode[] = ['D-GIA', 'D-FLOORS', 'D-F2F', 'D-ROOF', 'AU-SKYLIGHT']
 
@@ -21,6 +22,9 @@ export interface SchemeResultsProps {
   onSelect: (key: string, dbIds: number[]) => void
   colouring?: { on: boolean; onChange: (on: boolean) => void; available: boolean }
   onNorthChange?: (angleDeg: number) => void
+  inputs?: ProjectInputs
+  onInputsChange?: (inputs: ProjectInputs) => void
+  floodPlane?: FloodPlaneToggle
 }
 
 function EdgeResults({ run, measures, selectedKey, onSelect, colouring, onNorthChange }: SchemeResultsProps) {
@@ -60,39 +64,6 @@ function EdgeResults({ run, measures, selectedKey, onSelect, colouring, onNorthC
       </MeasureSection>
       <MeasureSection title={messages.gaps.title} testId="gaps-section">
         <GapsList scheme="EDGE" measures={measures} selectedKey={selectedKey} onSelect={onSelect} />
-      </MeasureSection>
-    </>
-  )
-}
-
-function CasaResults({ measures, selectedKey, onSelect }: SchemeResultsProps) {
-  return (
-    <>
-      {measures.map((m) => {
-        const code = m.code
-        if (!isCodeOf('CASA', code)) return null
-        return (
-          <MeasureSection
-            key={code}
-            title={messages.casa.titles[code]}
-            guide={m.guide}
-            credits={MEASURES[code].credits}
-            testId="casa-measure"
-            code={code}
-          >
-            {m.blockedBy?.length ? (
-              <ul className="flex flex-col gap-1 text-xs text-muted-foreground" data-testid="measure-blocked">
-                {m.blockedBy.map((blocker) => (
-                  <li key={JSON.stringify(blocker)}>{blockerText(blocker)}</li>
-                ))}
-              </ul>
-            ) : null}
-            {m.inputs.length > 0 ? <DesignInputs measures={[m]} selectedKey={selectedKey} onSelect={onSelect} /> : null}
-          </MeasureSection>
-        )
-      })}
-      <MeasureSection title={messages.gaps.title} testId="gaps-section">
-        <GapsList scheme="CASA" measures={measures} selectedKey={selectedKey} onSelect={onSelect} />
       </MeasureSection>
     </>
   )

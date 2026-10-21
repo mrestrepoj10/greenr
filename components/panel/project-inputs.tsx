@@ -52,6 +52,17 @@ const control =
 
 type Update = (key: ProjectInputKey, value: ProjectInputs[ProjectInputKey] | undefined) => void
 
+const FIELD_OF = new Map(GROUPS.flat().map((f) => [f.key, f]))
+
+const updater =
+  (inputs: ProjectInputs, onChange?: (inputs: ProjectInputs) => void): Update =>
+  (key, value) => {
+    const next: Record<string, unknown> = { ...inputs }
+    if (value === undefined) delete next[key]
+    else next[key] = value
+    onChange?.(next as ProjectInputs)
+  }
+
 const optionLabel = (key: ChoiceKey, value: string) => (messages.projectInputs.options[key] as Record<string, string>)[value]
 
 export interface ProjectInputsFormProps {
@@ -64,12 +75,7 @@ export function ProjectInputsForm({ inputs, onChange }: ProjectInputsFormProps) 
   const set = Object.keys(inputs).length
   const [open, setOpen] = useState(set === 0)
 
-  const update: Update = (key, value) => {
-    const next: Record<string, unknown> = { ...inputs }
-    if (value === undefined) delete next[key]
-    else next[key] = value
-    onChange?.(next as ProjectInputs)
-  }
+  const update = updater(inputs, onChange)
 
   return (
     <details
@@ -98,16 +104,31 @@ export function ProjectInputsForm({ inputs, onChange }: ProjectInputsFormProps) 
   )
 }
 
+/** A few of the project inputs where a measure needs them, saved the same way as the form. */
+export function ProjectInputFields({ keys, inputs, onChange }: { keys: readonly ProjectInputKey[]; inputs: ProjectInputs; onChange?: (inputs: ProjectInputs) => void }) {
+  const update = updater(inputs, onChange)
+  return (
+    <div className="grid grid-cols-2 gap-x-3 gap-y-2" data-testid="inline-inputs">
+      {keys.flatMap((key) => {
+        const field = FIELD_OF.get(key)
+        return field ? [<InputField key={key} field={field} inputs={inputs} disabled={!onChange} update={update} testIdPrefix="inline-input" />] : []
+      })}
+    </div>
+  )
+}
+
 function InputField({
   field,
   inputs,
   disabled,
   update,
+  testIdPrefix = 'project-input',
 }: {
   field: Field
   inputs: ProjectInputs
   disabled: boolean
   update: Update
+  testIdPrefix?: string
 }) {
   const id = useId()
   const { label, unit }: { label: string; unit?: string } = messages.projectInputs.fields[field.key]
@@ -128,7 +149,7 @@ function InputField({
             const raw = event.target.value
             update(field.key, CHOICES[field.key].find((option) => String(option) === raw))
           }}
-          data-testid={`project-input-${field.key}`}
+          data-testid={`${testIdPrefix}-${field.key}`}
         >
           <option value="">{messages.projectInputs.unset}</option>
           {CHOICES[field.key].map((option) => (
@@ -144,7 +165,7 @@ function InputField({
           numeric={field.kind === 'number'}
           initial={value === undefined ? '' : String(value)}
           disabled={disabled}
-          testId={`project-input-${field.key}`}
+          testId={`${testIdPrefix}-${field.key}`}
           commit={(raw) => {
             const value = field.kind === 'text' || raw === '' ? raw || undefined : Number(raw)
             if (typeof value === 'number' && !Number.isFinite(value)) return false
@@ -153,7 +174,7 @@ function InputField({
           }}
         />
       )}
-      {field.key === 'climateZone' ? (
+      {field.key === 'climateZone' && testIdPrefix === 'project-input' ? (
         <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
           <span>{messages.projectInputs.zoneHelp}</span>
           <a

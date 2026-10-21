@@ -8,6 +8,7 @@ import { roomIndexOf } from '../../rooms'
 import type { Element, Gap, InputValue, Measure, MeasureBlocker, MeasureFlag } from '../../types'
 import { deriveUnits } from '../../units'
 import { tallyFacade } from '../eem01'
+import { labelFamily } from '../labels'
 import { measureResult } from '../result'
 
 export const C_VENT_LABELS = {
@@ -21,8 +22,11 @@ export const C_VENT_LABELS = {
   lowestUnit: 'Lowest glazing share over a unit',
 } as const
 
-const unitShareLabel = (unit: string) => `Unit ${unit}: glazing share of floor area`
-const roomShareLabel = (name: string, id: string) => `Room ${name} ${id}: useful opening share of floor area`
+/** SBc6 glazing share per unit and SBp1 useful opening share per room, one input each. */
+export const C_VENT_ROWS = {
+  unit: labelFamily('Unit ', ': glazing share of floor area'),
+  room: labelFamily('Room ', ': useful opening share of floor area'),
+} as const
 
 function operableGaps(windows: Element[]): Gap[] {
   const byType = new Map<string, Element[]>()
@@ -84,7 +88,7 @@ export const C_VENT: Measure = {
         { label: L.closedRooms, value: closed.length, unit: 'rooms', source: 'rooms', dbIds: closed.map((r) => r.dbId) },
         ...measured.map(
           (m): InputValue => ({
-            label: roomShareLabel(m.room.name, text(byId.get(m.room.dbId)!.params, 'Number') ?? `#${m.room.dbId}`),
+            label: C_VENT_ROWS.room.of(`${m.room.name} ${text(byId.get(m.room.dbId)!.params, 'Number') ?? `#${m.room.dbId}`}`),
             value: m.share,
             unit: 'ratio',
             source: 'mixed',
@@ -119,7 +123,7 @@ export const C_VENT: Measure = {
         { label: L.units, value: units.length, unit: 'units', source: 'mixed' },
         { label: L.unitsAtLeast, value: atLeast.length, unit: 'units', source: 'mixed' },
         { label: L.lowestUnit, value: measured.length ? Math.min(...measured.map((s) => s.share)) : null, unit: 'ratio', source: 'mixed' },
-        ...shares.map((s): InputValue => ({ label: unitShareLabel(s.unit.label), value: s.share, unit: 'ratio', source: 'mixed', dbIds: s.dbIds })),
+        ...shares.map((s): InputValue => ({ label: C_VENT_ROWS.unit.of(s.unit.label), value: s.share, unit: 'ratio', source: 'mixed', dbIds: s.dbIds })),
       )
       if (atLeast.length < measured.length) {
         flags.push({
