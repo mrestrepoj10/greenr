@@ -12,6 +12,18 @@ const SESSION = process.env.AB_SESSION ?? `greenr-verify-${process.pid}`
 const MODEL_NAME = '210_King_Arch.rvt'
 const EXPECTED_VIEW = 'New Construction'
 const MIN_ROOMS = 200
+// A protected Vercel preview accepts either the project's automation bypass
+// secret or the linked project's development OIDC token. Neither is logged.
+const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+const OIDC = process.env.VERCEL_OIDC_TOKEN
+const FETCH_HEADERS = BYPASS
+  ? { 'x-vercel-protection-bypass': BYPASS }
+  : OIDC
+    ? { 'x-vercel-trusted-oidc-idp-token': OIDC }
+    : {}
+// The cookie makes the page's own requests (viewer token, assets) pass too.
+const BROWSER_HEADERS = BYPASS ? { ...FETCH_HEADERS, 'x-vercel-set-bypass-cookie': 'true' } : FETCH_HEADERS
+const AUTHED = Object.keys(FETCH_HEADERS).length > 0
 
 const failures = []
 function check(ok, label, detail) {
@@ -30,6 +42,16 @@ function ab(args, input) {
   return out.trim()
 }
 
+function open(url) {
+  ab(AUTHED ? ['open', url, '--headers', JSON.stringify(BROWSER_HEADERS)] : ['open', url])
+}
+
+async function getJson(path) {
+  const response = await fetch(`${BASE_URL}${path}`, { headers: FETCH_HEADERS })
+  if (!response.ok) throw new Error(`${path} returned ${response.status}`)
+  return response.json()
+}
+
 function evalJson(script) {
   const out = ab(['eval', '--stdin'], script)
   return JSON.parse(out)
@@ -38,16 +60,16 @@ function evalJson(script) {
 mkdirSync(SHOTS_DIR, { recursive: true })
 
 try {
-  const catalog = await (await fetch(`${BASE_URL}/api/models`)).json()
+  const catalog = await getJson('/api/models')
   const model = catalog.models?.find((m) => m.name === MODEL_NAME)
   check(Boolean(model), `catalog lists ${MODEL_NAME}`, { count: catalog.models?.length })
   const preferred = model?.viewables.find((v) => v.guid === model.preferredViewable)
   check(preferred?.name === EXPECTED_VIEW, 'catalog prefers the master view', preferred?.name)
 
-  const token = await (await fetch(`${BASE_URL}/api/viewer-token`)).json()
+  const token = await getJson('/api/viewer-token')
   check(typeof token.accessToken === 'string' && token.expiresInSeconds > 0, 'viewer token route')
 
-  ab(['open', `${BASE_URL}/`])
+  open(`${BASE_URL}/`)
   ab(['wait', '[data-testid=model-card]'])
   const home = evalJson(`({
     cards: document.querySelectorAll('[data-testid=model-card]').length,
@@ -57,7 +79,7 @@ try {
   check(home.link, 'home links to the 210 King project page')
   ab(['screenshot', join(SHOTS_DIR, 'unit1-home.png')])
 
-  ab(['open', `${BASE_URL}/p/${model.slug}`])
+  open(`${BASE_URL}/p/${model.slug}`)
   ab([
     'wait',
     '--fn',
