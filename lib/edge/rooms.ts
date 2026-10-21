@@ -18,10 +18,8 @@ export type Room = {
 
 export type PlanBounds = { x0: number; x1: number; y0: number; y1: number }
 
-/** The indoor rooms of a snapshot, the only evidence the envelope probe trusts for "inside". */
 export type RoomIndex = {
   rooms: Room[]
-  /** World z of project elevation 0. Grade, for the below-grade rules. */
   gradeZ: number
   bounds: PlanBounds
 }
@@ -37,7 +35,6 @@ export function isIndoorRoom(element: Element, t: Thresholds): boolean {
 
 const cache = new WeakMap<Snapshot, RoomIndex>()
 
-/** Memoised per snapshot for the default thresholds. */
 export function roomIndexOf(snapshot: Snapshot, t: Thresholds = DEFAULT_THRESHOLDS): RoomIndex {
   if (t !== DEFAULT_THRESHOLDS) return buildRoomIndex(snapshot, t)
   const hit = cache.get(snapshot)
@@ -71,7 +68,6 @@ function buildRoomIndex(snapshot: Snapshot, t: Thresholds): RoomIndex {
   return { rooms, gradeZ: gradeZ(rooms, snapshot), bounds: boundsOf(rooms) }
 }
 
-/** World z of elevation 0: the median over rooms of floor z minus the room's level elevation and base offset. */
 function gradeZ(rooms: Room[], snapshot: Snapshot): number {
   const elevation = new Map(snapshot.levels.map((l) => [l.name, l.elevation]))
   const offsets = rooms
@@ -118,11 +114,10 @@ export function inFootprint(room: Room, x: number, y: number): boolean {
   return false
 }
 
-/** The dbId of an indoor room containing the point, or 0. */
-export function roomAt(index: RoomIndex, x: number, y: number, z: number): number {
+export function roomAt(index: RoomIndex, x: number, y: number, z: number): number | null {
   for (const room of index.rooms) {
     if (z < room.zmin || z > room.zmax) continue
     if (inFootprint(room, x, y)) return room.dbId
   }
-  return 0
+  return null
 }

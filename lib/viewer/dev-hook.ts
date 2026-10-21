@@ -14,7 +14,6 @@ declare global {
   }
 }
 
-/** Exposes the engine on window.__greenr for console and agent-browser checks against the live viewer. */
 export function installDevHook(viewer: Autodesk.Viewing.Viewer3D): GreenrDevHook {
   const hook: GreenrDevHook = {
     readSnapshot: (opts) => readSnapshot(viewer, opts),

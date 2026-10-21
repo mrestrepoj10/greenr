@@ -4,7 +4,6 @@ import { installDevHook } from '@/lib/viewer/dev-hook'
 
 const FIXTURE_CATEGORIES = /Walls|Curtain Panels|Windows|Doors|Roofs|Floors|Rooms/
 
-/** Rounds to 0.1 mm and drops what the engine never reads, so the 210 King snapshot fits in a small fixture. */
 function fixtureOf(snapshot: Snapshot): Snapshot {
   const round = (x: number) => Math.round(x * 1e4) / 1e4
   const deep = <T>(v: T): T =>

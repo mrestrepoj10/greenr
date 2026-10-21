@@ -40,7 +40,6 @@ export type FacadeTally = {
 
 const t = DEFAULT_THRESHOLDS
 
-/** Façade walls already counted, keyed so that a second layer of the same façade points at the first. */
 function layerDuplicates(walls: WallProbe[]): Map<number, number> {
   const sorted = [...walls].sort((a, b) => (b.element.area ?? 0) - (a.element.area ?? 0))
   const duplicateOf = new Map<number, number>()
@@ -66,10 +65,6 @@ function layerDuplicates(walls: WallProbe[]): Map<number, number> {
   return duplicateOf
 }
 
-/**
- * EEM01 per orientation. Gross façade = net wall area + window W×H + door W×H, over walls that the room probe
- * places on the envelope and the classification calls exterior. Glazing = window W×H + glazed curtain panel area.
- */
 export function tallyFacade(snapshot: Snapshot, classifications: Classification[], exclusions: Exclusion[]): FacadeTally {
   const env = analyzeEnvelope(snapshot)
   const roles = roleIndex(classifications)

@@ -10,7 +10,6 @@ export type FloorToFloor = {
   roomsMeasured: number
 }
 
-/** Finished floor to finished floor, per room: the nearest Floor or Roof slab whose top is above the room's base. */
 export function floorToFloor(rooms: RoomIndex, slabs: Element[], t: Thresholds): FloorToFloor {
   const byRoom = new Map<number, number>()
   let weighted = 0
@@ -35,7 +34,6 @@ export function floorToFloor(rooms: RoomIndex, slabs: Element[], t: Thresholds):
 }
 
 export type StoreyCount = {
-  /** Area-weighted over the plan grid. */
   aboveWeighted: number
   belowWeighted: number
   /** EDGE rounds the weighted average half up: 1.4 is 1 floor, 1.5 is 2. */

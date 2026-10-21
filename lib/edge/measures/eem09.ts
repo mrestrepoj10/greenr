@@ -12,7 +12,6 @@ export const GLAZING_PARAMS = {
   construction: 'Analytic Construction',
 } as const
 
-/** Which of U, SHGC and VT a glazing type lacks. A zero counts as missing; R stands in for U when U is absent. */
 export function missingGlazingData(params: Element['params']): string[] {
   const missing: string[] = []
   if (positive(params, GLAZING_PARAMS.u) === null && positive(params, GLAZING_PARAMS.r) === null) missing.push(GLAZING_PARAMS.u)

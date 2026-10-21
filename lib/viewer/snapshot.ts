@@ -26,7 +26,6 @@ const CATEGORIES: Record<string, Role> = {
 
 const LENGTH_PARAMS = ['Length', 'Width', 'Height', 'Rough Width', 'Rough Height', 'Base Offset', 'Elevation']
 const AREA_PARAMS = ['Area']
-/** Parameters kept raw on Element.params, for the classifier and the gaps list. Dimensions move to typed fields. */
 const KEPT_PARAMS = ['Function', 'Name', 'Rough Width', 'Rough Height', ...Object.values(GLAZING_PARAMS), ...SRI_PARAMS]
 const PROPS = [
   ...new Set([
@@ -70,7 +69,7 @@ const UNIT_FACTORS: Record<string, number> = {
 
 /**
  * Runs inside the property database worker, so it travels as source text: a string keeps bundlers from rewriting it
- * with helpers the worker cannot see. Merges type parameters into instances and converts numbers to SI per attribute.
+ * with helpers the worker cannot see.
  */
 const PROPERTY_SCAN = `function (pdb, ud) {
   var catAttr = -1, typeAttr = -1, nameAttr = -1, keep = {}, factor = {};
@@ -131,10 +130,6 @@ const ROOM_FLOOR_TOL_M = 0.01524
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)
 const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v : undefined)
 
-/**
- * One pass over the loaded model: property rows from the database worker, then world-space triangles for walls,
- * panels, windows and doors (façade records) and rooms (floor footprints). Everything leaves here in metres.
- */
 export async function readSnapshot(viewer: Autodesk.Viewing.Viewer3D, opts: ReadSnapshotOptions = {}): Promise<Snapshot> {
   const t0 = performance.now()
   const model = viewer.model as unknown as ViewerModel | undefined

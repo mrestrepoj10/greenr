@@ -4,7 +4,6 @@ import type { MeasureCode, MeasureResult } from '../types'
 type Parts = Omit<MeasureResult, 'code' | 'guide' | 'state' | 'gaps' | 'pendingTypeKeys'> &
   Partial<Pick<MeasureResult, 'gaps' | 'pendingTypeKeys'>>
 
-/** A gap that blocks the claim wins over pending confirmations; pending inputs make the value provisional. */
 export function measureResult(code: MeasureCode, parts: Parts): MeasureResult {
   const gaps = parts.gaps ?? []
   const pendingTypeKeys = parts.pendingTypeKeys ?? []

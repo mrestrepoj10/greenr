@@ -4,7 +4,6 @@ import type { Classification, Exclusion, ExclusionReason, Snapshot } from './typ
 
 export type PortionReason = 'below-grade' | 'party-wall' | 'parapet' | 'shaft'
 
-/** A confirmed portion exclusion keeps this share of a wall. Every other reason removes the element whole. */
 export const KEEP: Record<PortionReason, (wall: WallProbe) => number> = {
   'below-grade': (w) => w.aboveGradeFrac,
   'party-wall': (w) => 1 - w.partyFrac,
@@ -24,14 +23,11 @@ export function isPortionReason(reason: ExclusionReason): reason is PortionReaso
 }
 
 export type AppliedExclusions = {
-  /** Elements that confirmed whole-element exclusions remove. */
   removed: Set<number>
-  /** Confirmed portion reasons per wall. */
   portions: Map<number, Set<PortionReason>>
   unconfirmed: Exclusion[]
 }
 
-/** Splits exclusions into what applies now and what waits for confirmation. `reasons` limits which reasons a measure honours. */
 export function applyExclusions(exclusions: Exclusion[], reasons?: readonly ExclusionReason[]): AppliedExclusions {
   const removed = new Set<number>()
   const portions = new Map<number, Set<PortionReason>>()

@@ -14,7 +14,6 @@ import type {
 
 export type Side = -1 | 0 | 1
 
-/** What the room probe found on one wall. Geometry only: no classification goes in. */
 export type WallProbe = {
   element: Element
   geom: FacadeGeometry
@@ -45,13 +44,11 @@ export type EnvelopeAnalysis = {
   rooms: RoomIndex
   walls: Map<number, WallProbe>
   openings: Map<number, OpeningProbe>
-  /** Curtain wall dbId to the dbIds of its panels. */
   panelsOf: Map<number, number[]>
 }
 
 const cache = new WeakMap<Snapshot, EnvelopeAnalysis>()
 
-/** The room probe over every wall, opening and panel of a snapshot. Pure; memoised per snapshot for the default thresholds. */
 export function analyzeEnvelope(snapshot: Snapshot, t: Thresholds = DEFAULT_THRESHOLDS): EnvelopeAnalysis {
   if (t === DEFAULT_THRESHOLDS) {
     const hit = cache.get(snapshot)
@@ -100,28 +97,29 @@ export function outwardAzimuth(g: FacadeGeometry, sign: Side): number | null {
   return sign === 0 ? null : azimuthOf([sign * g.n[0], sign * g.n[1]])
 }
 
-/** -1 when a room lies only on the +n side (so -n is outside), +1 for the reverse, 0 for rooms on both sides, null for none. */
-function sideAt(g: FacadeGeometry, rooms: RoomIndex, u: number, z: number, t: Thresholds): Side | null {
+type Outside = 1 | -1 | 'both-sides-indoor' | 'no-room'
+
+/** Which face of the wall looks outside at one sample: the face opposite the only room found next to it. */
+function outsideAt(g: FacadeGeometry, rooms: RoomIndex, u: number, z: number, t: Thresholds): Outside {
   const off = Math.max(g.thickness, t.minProbeThicknessM) / 2 + t.probeOffsetM
   const bx = g.n[0] * g.sMid + g.u[0] * u
   const by = g.n[1] * g.sMid + g.u[1] * u
-  const plus = roomAt(rooms, bx + g.n[0] * off, by + g.n[1] * off, z)
-  const minus = roomAt(rooms, bx - g.n[0] * off, by - g.n[1] * off, z)
-  if (plus && minus) return 0
+  const plus = roomAt(rooms, bx + g.n[0] * off, by + g.n[1] * off, z) !== null
+  const minus = roomAt(rooms, bx - g.n[0] * off, by - g.n[1] * off, z) !== null
+  if (plus && minus) return 'both-sides-indoor'
   if (plus) return -1
   if (minus) return 1
-  return null
+  return 'no-room'
 }
 
-/** True when another room sits outside within the court limit: a shaft, chase or court with aspect ratio of 3 or more. */
-function roomOutside(g: FacadeGeometry, rooms: RoomIndex, u: number, z: number, sign: Side, limit: number, t: Thresholds): boolean {
+function roomOutside(g: FacadeGeometry, rooms: RoomIndex, u: number, z: number, sign: 1 | -1, limit: number, t: Thresholds): boolean {
   const off = Math.max(g.thickness, t.minProbeThicknessM) / 2
   const bx = g.n[0] * g.sMid + g.u[0] * u
   const by = g.n[1] * g.sMid + g.u[1] * u
   for (let k = 0; ; k++) {
     const d = t.courtStartM + k * t.courtStepM
     if (d >= limit - 1e-9) return false
-    if (roomAt(rooms, bx + sign * g.n[0] * (off + d), by + sign * g.n[1] * (off + d), z)) return true
+    if (roomAt(rooms, bx + sign * g.n[0] * (off + d), by + sign * g.n[1] * (off + d), z) !== null) return true
   }
 }
 
@@ -140,16 +138,16 @@ function tally(g: FacadeGeometry, rooms: RoomIndex, us: number[], zs: number[], 
     for (const z of zs) {
       total++
       if (z > z0) aboveGrade++
-      const side = sideAt(g, rooms, u, z, t)
-      if (side === null) {
+      const outside = outsideAt(g, rooms, u, z, t)
+      if (outside === 'no-room') {
         none++
         noneZ.push(z)
         continue
       }
       roomTop = Math.max(roomTop, z)
-      if (side === 0) both++
-      else if (roomOutside(g, rooms, u, z, side, courtLimitM, t)) enclosed++
-      else if (side === 1) outPlus++
+      if (outside === 'both-sides-indoor') both++
+      else if (roomOutside(g, rooms, u, z, outside, courtLimitM, t)) enclosed++
+      else if (outside === 1) outPlus++
       else outMinus++
     }
   }
@@ -199,14 +197,12 @@ function parallel(a: FacadeGeometry, b: FacadeGeometry, t: Thresholds): boolean 
   return Math.abs(Math.cos(((a.axisDeg - b.axisDeg) * Math.PI) / 180)) >= t.parallelCos
 }
 
-/** Plan distance from b's face centre to a's midplane. */
 export function midplaneGap(a: FacadeGeometry, b: FacadeGeometry): number {
   const cx = b.n[0] * b.sMid + b.u[0] * b.uc
   const cy = b.n[1] * b.sMid + b.u[1] * b.uc
   return Math.abs(cx * a.n[0] + cy * a.n[1] - a.sMid)
 }
 
-/** Overlap of b with a along a's length and in height. */
 export function overlap(a: FacadeGeometry, b: FacadeGeometry): { along: number; up: number } {
   const k = b.u[0] * a.u[0] + b.u[1] * a.u[1]
   const b0 = b.umin * k

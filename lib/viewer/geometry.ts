@@ -109,7 +109,6 @@ export function facadeOf(kind: FacadeKind, tris: Triangles): FacadeGeometry | nu
   }
 }
 
-/** A room's floor in plan: its downward faces within `bottomTolM` of its lowest point. */
 export function footprintOf(tris: Triangles, baseOffset: number, bottomTolM: number): Footprint | null {
   const d = tris.data
   let zmin = Infinity

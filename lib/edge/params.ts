@@ -1,6 +1,5 @@
 import type { Element } from './types'
 
-/** A Revit parameter by display name, with or without a "Group::" prefix. */
 export function param(params: Element['params'], name: string): string | number | null | undefined {
   if (name in params) return params[name]
   const suffix = `::${name}`

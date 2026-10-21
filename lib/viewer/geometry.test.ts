@@ -3,7 +3,6 @@ import { facadeOf, footprintOf, type Triangles } from './geometry'
 
 type P = [number, number, number]
 
-/** The 12 triangles of a box with plan corners a, b, c, d (counter-clockwise) from z0 to z1, outward-facing. */
 function prism(corners: [number, number][], z0: number, z1: number): Triangles {
   const tris: number[] = []
   const quad = (p: P, q: P, r: P, s: P) => tris.push(...p, ...q, ...r, ...p, ...r, ...s)
@@ -19,7 +18,6 @@ function prism(corners: [number, number][], z0: number, z1: number): Triangles {
   return { data: Float64Array.from(tris), count: tris.length / 9 }
 }
 
-/** A straight wall slab of the given length, thickness and height, centred on (cx, cy) and turned by `deg`. */
 function wall(cx: number, cy: number, length: number, thickness: number, deg: number, z0: number, z1: number): Triangles {
   const t = (deg * Math.PI) / 180
   const d = [Math.cos(t), Math.sin(t)]

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// Unit 2 check: the engine reads 210 King from the live viewer and reproduces the spike's EEM01 table.
 // Usage: BASE_URL=http://localhost:3000 SHOTS_DIR=/path RUNS=3 node scripts/verify/unit2-engine.mjs
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync } from 'node:fs'

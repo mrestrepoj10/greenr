@@ -2,7 +2,6 @@ import type { Bbox, Classification, Element, ElementRole, FacadeGeometry, Facade
 
 const rect = (x0: number, y0: number, x1: number, y1: number) => [x0, y0, x1, y0, x1, y1, x0, y0, x1, y1, x0, y1]
 
-/** A straight wall or opening from (x0, y0) to (x1, y1), with its plan normal folded into [0, 180) degrees. */
 export function facadeAlong(
   kind: FacadeKind,
   [x0, y0]: [number, number],
@@ -80,11 +79,7 @@ export function classify(roles: Record<string, ElementRole>): Classification[] {
 
 export type BoxOptions = { wallTop?: number; northAngleDeg?: number; windowParams?: Element['params'] }
 
-/**
- * A 20 m x 10 m two-storey box: rooms fill both storeys (0 to 3.5 m, 3.5 to 7 m) on each side of a partition at x = 10.
- * South and north walls are basic walls with one window each, east has a door, west is a curtain wall with
- * one glazed and one solid panel. The partition is typed exterior on purpose: only the room probe can drop it.
- */
+/** The partition is typed exterior on purpose: only the room probe can drop it. */
 export function box({ wallTop = 7, northAngleDeg = 0, windowParams = {} }: BoxOptions = {}) {
   nextId = 1
   const wall = (kind: FacadeKind, a: [number, number], b: [number, number], typeKey: string, area: number) => {

@@ -129,7 +129,6 @@ export type Units = 'ft' | 'm'
 
 export type NorthSource = 'project' | 'true-north-param' | 'user'
 
-/** What reading the snapshot cost, for timing reports. */
 export type SnapshotStats = {
   elements: number
   triangles: number
@@ -227,9 +226,7 @@ export type ProbeTally = {
   outMinus: number
   /** One-sided, but another room within the court limit outside: a shaft, a chase or a court with aspect ratio of 3 or more. */
   enclosed: number
-  /** Rooms on both sides. */
   both: number
-  /** No room on either side. */
   none: number
   /** No-room samples above the highest sample that touched a room. */
   parapet: number

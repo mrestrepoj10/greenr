@@ -8,7 +8,6 @@ export const FACADE_WALL_ROLES: ReadonlySet<ElementRole> = new Set(['exterior-wa
 
 export type RoleIndex = {
   roleOf(element: Element): ElementRole | null
-  /** True when the type has no settled answer: unclassified, a model guess, or low confidence. */
   isPending(typeKey: string): boolean
 }
 

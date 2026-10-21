@@ -7,7 +7,6 @@ import type { Classification, Element, Exclusion, Snapshot } from '../types'
 
 export type Building = {
   rooms: RoomIndex
-  /** Floor and roof elements that bound storeys, after confirmed massing and user exclusions. */
   slabs: Element[]
   roofs: Element[]
   ff: FloorToFloor
@@ -18,7 +17,6 @@ export type Building = {
 
 const last = new WeakMap<Snapshot, { classifications: Classification[]; exclusions: Exclusion[]; building: Building }>()
 
-/** Rooms, slabs and storeys shared by the design-tab measures. A run passes the same arrays to every measure, so the last result is reused. */
 export function buildingOf(snapshot: Snapshot, classifications: Classification[], exclusions: Exclusion[]): Building {
   const hit = last.get(snapshot)
   if (hit && hit.classifications === classifications && hit.exclusions === exclusions) return hit.building
