@@ -46,4 +46,4 @@ export default defineSchema({
     manifest: v.any(),
     createdAt: v.number(),
   }).index('by_runId', ['runId']),
-}, { schemaValidation: false })
+})

@@ -6,8 +6,8 @@ Persistence for runs, classifications, exclusions and evidence packs. No auth in
 
 | Table | Key | Holds |
 | --- | --- | --- |
-| `projects` | `by_slug` | One row per model slug: URN, viewable, north angle and source. |
-| `runs` | `by_projectId_and_computedAt` | A `RunResult` without element ids. `measures[].orientations[]` and `measures[].gaps[]` carry areas and messages only. |
+| `projects` | `by_slug` | One row per model slug: URN, viewable, north angle and source, the schemes every check measures (`EDGE`, `CASA` or both) and the project inputs CASA reads. |
+| `runs` | `by_projectId_and_computedAt` | A `RunResult` without element ids: its schemes, guide versions and project inputs, and per measure its guide page and any blockers. `measures[].orientations[]` and `measures[].gaps[]` carry areas and messages only. |
 | `runElements` | `by_runId` | Element id lists for a run, chunked at 8000 ids per document. Keys are `<code>:orientation:<N..NW>:wall`, `<code>:orientation:<N..NW>:glazing` and `gap:<id>`. |
 | `classifications` | `by_projectId`, `by_projectId_and_typeKey` | One row per type per project. A `user` row is never replaced by a `rule` or `model` row. `classifications.unconfirm` deletes it, so the rules or the model answer again. |
 | `exclusions` | `by_projectId`, `by_projectId_and_id` | One row per exclusion id per project with `status: proposed, accepted, rejected`. A decided row is never replaced by a new proposal. `exclusions.decide` sets the status, and setting it back to `proposed` is the undo. |
@@ -17,7 +17,7 @@ The split keeps a run under the 1 MB document limit when an orientation holds th
 
 ## Functions
 
-- `projects.upsert`, `projects.getBySlug`, `projects.setNorth`
+- `projects.upsert`, `projects.getBySlug`, `projects.setNorth`, `projects.setSchemes`, `projects.setInputs`
 - `runs.save`, `runs.latest`, `runs.elementIds`, `runs.list` (last 10, state and computedAt)
 - `classifications.listByProject`, `classifications.confirm`, `classifications.unconfirm`, `classifications.saveMany`
 - `exclusions.listByProject`, `exclusions.decide` (`status: proposed, accepted, rejected`), `exclusions.saveProposed`
@@ -41,6 +41,15 @@ npx convex deploy       # prod, read by production
 ```
 
 Every push to `main` starts a Vercel production build. If a change alters a function's arguments, run `npx convex deploy` before production serves the new build, or the live page calls a function that prod does not have.
+
+Production data saved before schemes needs one move before main's schema deploys, because prod enforces the schema and its rows have no schemes. Deploy the functions at commit ec6a129, which turns enforcement off and adds `admin:migrateToSchemes`, run the migration, then deploy main, which enforces the schema again:
+
+```sh
+git checkout ec6a129 -- convex && npx convex deploy && npx convex run --prod admin:migrateToSchemes '{}'
+git checkout HEAD -- convex && npx convex deploy
+```
+
+The dev deployment went through these steps on 21 Oct 2026.
 
 `admin.resetProject` is an internal mutation, so only the deployment's CLI can call it. `scripts/verify/e2e.mjs` calls it first to start 210 King from an empty project, on the deployment behind `BASE_URL`. That is prod for `greenr-omega.vercel.app` or when `E2E_PROD=1`, and dev otherwise. To reset by hand:
 

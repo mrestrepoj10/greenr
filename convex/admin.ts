@@ -1,46 +1,5 @@
 import { v } from 'convex/values'
 import { internalMutation } from './_generated/server'
-import type { Doc } from './_generated/dataModel'
-
-type LegacyGuide = { part: number; page: string; title: string; url: string }
-type LegacyRun = Omit<Doc<'runs'>, 'schemes' | 'guides' | 'inputs' | 'measures'> & {
-  guideVersion: string
-  measures: (Omit<Doc<'runs'>['measures'][number], 'guide'> & { guide: LegacyGuide })[]
-}
-
-/** One-off move of projects and runs saved before schemes: EDGE only, no inputs, guide part N as the document
- * "EDGE Part N". Runs while the schema is not enforced; a document already in the new shape is left alone, so it can run twice. */
-export const migrateToSchemes = internalMutation({
-  args: {},
-  returns: v.object({ projects: v.number(), runs: v.number() }),
-  handler: async (ctx) => {
-    let projects = 0
-    for (const project of await ctx.db.query('projects').collect()) {
-      if (project.schemes !== undefined && project.inputs !== undefined) continue
-      await ctx.db.patch(project._id, { schemes: project.schemes ?? ['EDGE'], inputs: project.inputs ?? {} })
-      projects++
-    }
-    let runs = 0
-    for (const doc of await ctx.db.query('runs').collect()) {
-      if (!('guideVersion' in doc)) continue
-      const run = doc as unknown as LegacyRun
-      await ctx.db.replace(run._id, {
-        projectId: run.projectId,
-        runId: run.runId,
-        state: run.state,
-        schemes: ['EDGE'],
-        guides: { EDGE: run.guideVersion, CASA: '3.1 (Edición 2026)' },
-        inputs: {},
-        snapshot: run.snapshot,
-        measures: run.measures.map(({ guide: { part, ...guide }, ...m }) => ({ ...m, guide: { doc: `EDGE Part ${part}`, version: run.guideVersion, ...guide } })),
-        computedAt: run.computedAt,
-        elementCount: run.elementCount,
-      })
-      runs++
-    }
-    return { projects, runs }
-  },
-})
 
 /** Deletes one project's runs, element chunks, packs, classifications and exclusions and puts it back to EDGE only with
  * no inputs, so a verify run starts clean.
