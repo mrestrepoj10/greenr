@@ -7,7 +7,7 @@ export type Subject = {
   family: string
   typeName: string
   typeKey: string
-  /** Revit wall "Function" parameter: Exterior, Interior, Foundation, Retaining, Soffit, Core-shaft. */
+  /** Revit wall "Function" parameter: Exterior, Interior, Foundation, Retaining, Soffit, Core-shaft. Spanish Revit writes Exterior and Interior too. */
   function: string
   /** Category of the host element, for windows cut into roofs. */
   hostCategory: string
@@ -21,11 +21,14 @@ export type Rule = {
 
 const NAME_FIELDS = ['family', 'typeName', 'typeKey'] as const
 
-const GLAZED = /glaz|glass|window|vision/i
+// Spanish names sit beside the English ones: Colombian models are often authored in Spanish Revit.
+const GLAZED = /glaz|glass|window|vision|vidrio|cristal|ventana/i
 const SOLID = /spandrel|solid|metal|stone|wood|alumin|panel\b(?!.*glass)/i
-const SHADING = /shade|sun|louv|fin\b|brise|overhang/i
-const SKYLIGHT = /skylight|rooflight/i
-const CURTAIN_FAMILY = /curtain|system panel|CW_/i
+const SHADING = /shade|sun|louv|fin\b|brise|overhang|persiana|celos[ií]a|parasol/i
+const SKYLIGHT = /skylight|rooflight|claraboya|tragaluz/i
+const CURTAIN_FAMILY = /curtain|muro cortina|system panel|CW_/i
+const MASSING = /massing|masing|\bmasa/i
+const PARAPET = /parapet|antepecho|pretil/i
 
 const ENVELOPE_CATEGORIES = /Walls|Curtain Panels|Windows|Generic Models|Roofs|Floors|Doors|Rooms|Mass$/
 // Categories outside the envelope settle as "other" by rule. Envelope types that match no rule stay leftovers for the decision model, so the regex is a negative lookahead rather than a catch-all.
@@ -35,9 +38,9 @@ const named = (pattern: RegExp, rest: Rule['when'], role: ElementRole, reason: s
   NAME_FIELDS.map((field) => ({ when: { ...rest, [field]: pattern }, role, reason }))
 
 export const RULES: Rule[] = [
-  ...named(/massing/i, { category: /Walls|Mass$/ }, 'massing', 'name matches "massing"'),
+  ...named(MASSING, { category: /Walls|Mass$/ }, 'massing', 'name matches "massing"'),
   { when: { category: /Mass$/ }, role: 'massing', reason: 'Revit Mass category' },
-  ...named(/parapet/i, { category: /Walls/ }, 'parapet', 'name matches "parapet"'),
+  ...named(PARAPET, { category: /Walls/ }, 'parapet', 'name matches "parapet"'),
   { when: { category: /Curtain Wall Mullions/ }, role: 'other', reason: 'mullion, its area is counted inside the panel rough opening' },
   ...named(/mullion/i, { category: /Walls/ }, 'other', 'mullion, its area is counted inside the panel rough opening'),
   ...named(GLAZED, { category: /Curtain Panels/ }, 'curtain-glazed', 'curtain panel name matches glazing'),

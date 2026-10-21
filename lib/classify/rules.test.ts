@@ -3,6 +3,7 @@ import type { ElementRole } from '@/lib/edge/types'
 import { classifyByRule, RULES } from './rules'
 import { groupByType, indexByDbId } from './types-index'
 import { FIXTURE_ELEMENTS } from './fixture'
+import type { Element } from '@/lib/edge/types'
 
 const byDbId = indexByDbId(FIXTURE_ELEMENTS)
 const groups = groupByType(FIXTURE_ELEMENTS)
@@ -80,5 +81,53 @@ describe('groupByType', () => {
     expect(group.dbIds).toEqual([1, 2])
     expect(group.category).toBe('Revit Walls')
     expect(group.sample.dbId).toBe(1)
+  })
+})
+
+describe('Spanish Revit names', () => {
+  const spanish = (category: string, family: string, typeName: string, params: Element['params'] = {}, hostDbId?: number): Element => ({
+    dbId: 1,
+    typeKey: `${family} / ${typeName}`,
+    category,
+    family,
+    typeName,
+    params,
+    ...(hostDbId === undefined ? {} : { hostDbId }),
+  })
+  const roleOf = (e: Element) => classifyByRule([e])?.role ?? null
+
+  const cases: [Element, ElementRole][] = [
+    [spanish('Revit Walls', 'Muro básico', 'Fachada - Ladrillo', { Function: 'Exterior' }), 'exterior-wall'],
+    [spanish('Revit Walls', 'Muro básico', 'Tabique - Drywall', { Function: 'INTERIOR' }), 'interior-wall'],
+    [spanish('Revit Walls', 'Muro básico', 'Fachada', { 'Construcción::Function': 'exterior' }), 'exterior-wall'],
+    [spanish('Revit Curtain Panels', 'Panel de sistema', 'Vidrio templado'), 'curtain-glazed'],
+    [spanish('Revit Curtain Panels', 'Panel de sistema', 'Acristalado'), 'curtain-glazed'],
+    [spanish('Revit Curtain Panels', 'Panel de ventana', 'Proyectante'), 'curtain-glazed'],
+    [spanish('Revit Walls', 'Muro cortina', 'Fachada Cristal'), 'curtain-glazed'],
+    [spanish('Revit Walls', 'Muro cortina', 'Panel aluminio compuesto'), 'curtain-solid'],
+    [spanish('Revit Windows', 'Claraboya', 'Fija 900 x 900'), 'skylight'],
+    [spanish('Revit Windows', 'Ventana corrediza', 'Tragaluz 600'), 'skylight'],
+    [spanish('Revit Windows', 'Ventana corrediza', '1200 x 1500'), 'window'],
+    [spanish('Revit Walls', 'Muro básico', 'Masa_Contexto', { Function: 'Exterior' }), 'massing'],
+    [spanish('Revit Walls', 'Masing', 'Vecino', { Function: 'Exterior' }), 'massing'],
+    [spanish('Revit Walls', 'Muro básico', 'Antepecho 1.10', { Function: 'Exterior' }), 'parapet'],
+    [spanish('Revit Walls', 'Muro básico', 'Pretil cubierta', { Function: 'Exterior' }), 'parapet'],
+    [spanish('Revit Generic Models', 'Persiana', 'Horizontal 150'), 'shading'],
+    [spanish('Revit Generic Models', 'Celosía', 'Madera'), 'shading'],
+    [spanish('Revit Generic Models', 'Celosia', 'Concreto'), 'shading'],
+    [spanish('Revit Generic Models', 'Parasol', 'Vertical'), 'shading'],
+    [spanish('Revit Generic Models', 'Brise soleil', 'Aluminio'), 'shading'],
+  ]
+
+  test.each(cases.map(([element, role]) => [element.typeKey, role, element] as const))('%s -> %s', (_, role, element) => {
+    expect(roleOf(element)).toBe(role)
+  })
+
+  test('a Spanish wall with no Function and no telling name stays a leftover', () => {
+    expect(roleOf(spanish('Revit Walls', 'Muro básico', 'Genérico - 200 mm'))).toBeNull()
+  })
+
+  test('"masa" needs a word start, so a name that only contains it is not massing', () => {
+    expect(roleOf(spanish('Revit Walls', 'Muro básico', 'Carcamasa', { Function: 'Exterior' }))).toBe('exterior-wall')
   })
 })

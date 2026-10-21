@@ -45,7 +45,7 @@ export const ROLE_CRITERIA: Record<ElementRole, string> = {
 export const ROLE_QUESTION = {
   type: 'choice',
   instructions:
-    'This is one Revit element type from an architectural model. Which EDGE envelope role does it play? Judge from the category, family, type name and parameters.',
+    'This is one Revit element type from an architectural model, named in English or Spanish. Which envelope role does it play? Judge from the category, family, type name and parameters.',
   criteria: ROLE_CRITERIA,
 } as const
 
