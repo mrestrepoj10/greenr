@@ -15,6 +15,13 @@ export const ELEMENT_ROLES = [
   'floor',
   'room',
   'shading',
+  'plumbing-fixture',
+  'lighting-fixture',
+  'equipment',
+  'parking',
+  'planting',
+  'area',
+  'pipe',
   'other',
 ] as const
 export type ElementRole = (typeof ELEMENT_ROLES)[number]
