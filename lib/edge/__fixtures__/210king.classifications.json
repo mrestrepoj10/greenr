@@ -1,0 +1,849 @@
+[
+ {
+  "typeKey": "Basic Wall / BLDG1 - Foundation",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Foundation or Retaining, below grade is decided by level"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG1 - North Wall - BaseStoneWall",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG3 - Foundation",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Foundation or Retaining, below grade is decided by level"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG3 - South Wall - BaseStoneWall",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Basic Wall / 210 King - BLDG4 - Lower Facade",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "210 King - BLDG4 - Ground Floor Windows / 210 King - BLDG4 - Ground Floor Windows",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG 4 - EastWall - Ground to Roof",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "BLDG3 - Lobby Windows / BLDG3 - Lobby Windows",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG2 - East Wall -level 3 to 6",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Foundation or Retaining, below grade is decided by level"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG2 - Foundation",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Foundation or Retaining, below grade is decided by level"
+ },
+ {
+  "typeKey": "BLDG!- SouthFacade-Level 1 - Custom Window 01 / 84\" x 85\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG1-Door- West Entrance / 210 King - BLDG1 - West Entrance",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "BLDG1 -Window- WestFacade- Ground Level / 5' x 4' 1 1/2\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "210 King - BLDG1 - SW Entrance v2 / 210 King - BLDG1 - SW Entrance v2",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "BLDG1- Keystone Window Arch 03-SouthWestFacade / concrete",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG3 - Autodesk Entrance Box / 210 King - BLDG3 - Ground Floor Windows",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Floor / BLDG3-FLR-Generic",
+  "role": "floor",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Floors category"
+ },
+ {
+  "typeKey": "Basic Wall / Casingof Strucutre-INT - 2\"-Column",
+  "role": "interior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Interior, Core-shaft or Soffit"
+ },
+ {
+  "typeKey": "Door-Elevator / 1300 x 950mm",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "Basic Wall / ElevatorCoreFinished - 3 1/2\"",
+  "role": "interior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Interior, Core-shaft or Soffit"
+ },
+ {
+  "typeKey": "Basic Wall / ElevatorCoreMetalPlate - 2\"",
+  "role": "interior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Interior, Core-shaft or Soffit"
+ },
+ {
+  "typeKey": "Basic Wall / Foundation - 12\" Concrete",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Foundation or Retaining, below grade is decided by level"
+ },
+ {
+  "typeKey": "Basic Wall / Generic - 8\" - Filled",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Basic Wall / 210 King - BLDG4 - Rear box",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Basic Wall / Lobby-RedPaint-INT - 5\"",
+  "role": "interior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Interior, Core-shaft or Soffit"
+ },
+ {
+  "typeKey": "Door_whitePaint / 1 3/8\" Flat Panel",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "Revit Rooms",
+  "role": "room",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Rooms category"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG3 - KingFacade- Ext. BrickWall",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG1 - East Wall - level 1 to 2",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Foundation or Retaining, below grade is decided by level"
+ },
+ {
+  "typeKey": "210 King - BLDG2 - North Windows - Levels 1 to 6 / BLDG2 - North Windows - Levels 1 to 6",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG 3 - KingFacade-4\" BrickSurface",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG 1 - King St. Facade- Brick Masonry -Level 1 to 4",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "BLDG1-SouthFacade-Level1-Keystone Window Arch 01 / 3.5' Radius",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG 1 -window Double Hung - Level 2 / 49.5\" x 108\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG1 - Double Hung - Level 2 - Head Parametric4 / 49.5\" x 19\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG1 - Window-WestFacade- Level 1 / 3' x 4' 1 1/2\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Floor / BLDG1-FLR-Generic",
+  "role": "floor",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Floors category"
+ },
+ {
+  "typeKey": "Floor / BLDG2-FLR-Generic",
+  "role": "floor",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Floors category"
+ },
+ {
+  "typeKey": "Single-Flush2 / 36\" x 84\" 2",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "BLDG3 - North Windows Type 2 / 6'7\" x 7.5'",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "210 King - BLDG3 - Garage Door Type 1 / 210 King - BLDG3 - Garage Door Type 1",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "210 King - BLDG3 - Garage Door Type 2 / 210 King - BLDG3 - Garage Door Type 2",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "BLDG1 - Windows - Rear wall1 / 48\" x 96\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG1 - Windows - Rear wall1 / 72\" x 74\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Floor / Generic - 12\" - Filled",
+  "role": "floor",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Floors category"
+ },
+ {
+  "typeKey": "Floor / Generic - 6\"",
+  "role": "floor",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Floors category"
+ },
+ {
+  "typeKey": "Floor / Generic - 12\"",
+  "role": "floor",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Floors category"
+ },
+ {
+  "typeKey": "Single-Flush8 / 36\" x 84\" 2",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG 1- King St. Facade-Brick Masonary-9\" Masonry 3",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Basic Wall / Generic - 5\"",
+  "role": "interior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Interior, Core-shaft or Soffit"
+ },
+ {
+  "typeKey": "210 King - BLDG3 - Level 2 Windows / 210 King - BLDG3 - Ground Floor Windows",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG1 - East Wall - level 2 to 3",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Foundation or Retaining, below grade is decided by level"
+ },
+ {
+  "typeKey": "BLDG 1 -window Double Hung - Level 2 / 41.5\" x 88\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG1-SouthFacade-Double Hung - Level 2 - Head Parametric3 / 41.5\" x 19\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG 1 -window Double Hung - Level 2 / 49.5\" x 88\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG1 -keystone-SouthWest Double Hung - Level 2- / 60\" x 26.5\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG3 - North Windows Type 1 / 8' x 10'",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG3 - North Windows Type 2 / 8' x 7.5'",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG1 - Windows - Rear wall02 / 48\" x 74\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG1 - Windows - Rear wall2 / 48\" x 88\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Floor / 210 King - Roof Deck - Wood Joist 10\" - Wood finish",
+  "role": "floor",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Floors category"
+ },
+ {
+  "typeKey": "Curtain Wall / Curtain Wall 1",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Panel-AluminumBase-OfficeCurtainWall / Solid Panel",
+  "role": "curtain-solid",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "curtain panel name matches an opaque panel"
+ },
+ {
+  "typeKey": "System Panel / Glazed",
+  "role": "curtain-glazed",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "curtain panel name matches glazing"
+ },
+ {
+  "typeKey": "DoorSingle-Offices / 72\" x 48\"",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "Panel-wood-OfficeCurtainWall / Solid Panel",
+  "role": "curtain-solid",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "curtain panel name matches an opaque panel"
+ },
+ {
+  "typeKey": "Basic Wall / Generic-DropedCeilingPartition - 1\"",
+  "role": "interior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Interior, Core-shaft or Soffit"
+ },
+ {
+  "typeKey": "Basic Wall / Generic - 1' 3\"",
+  "role": "interior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Interior, Core-shaft or Soffit"
+ },
+ {
+  "typeKey": "Basic Wall / Generic - 12\"",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Basic Wall / DoubleCurvedWalls-INT - 5\"",
+  "role": "interior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Interior, Core-shaft or Soffit"
+ },
+ {
+  "typeKey": "Single-Flush / 30\" x 80\"",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "Basic Roof / Generic - 6\"",
+  "role": "roof",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Roofs category"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG 1- King St. Facade-Brick Masonary- 3levelup - 13\" Masonry 2",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "BLDG1 - Windows - Level 3 to 5 / 49.5\" x 74\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG1 - WindowKeyStone - Level 3 to 5 / 49.5\" x 74\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "210 King - BLDG2 - Windows - Level 3 to 6 / 210 King - BLDG2 - Windows - Level 3 to 6",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG1 - East Wall -level 3 to 6",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Foundation or Retaining, below grade is decided by level"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG1 - North Wall - Level 3 to 6",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Foundation or Retaining, below grade is decided by level"
+ },
+ {
+  "typeKey": "210 King - Window - BLDG2 - South West Corner - Level 3 to 5 / 5' x 7'2\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG1 - Window Header - South West- Level 3 to 5 / 49.5\" x 74\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG3 -Windows-North-Type 1 / 6'7\" x 9'",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Basic Wall / Casingof Strucutre-INT - 2\"-Beam",
+  "role": "interior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Interior, Core-shaft or Soffit"
+ },
+ {
+  "typeKey": "Double-Flush / 68\" x 84\"",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "BLDG3 - Window Sill - Level 3 to 6 / Long Window Sill",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "210 King - BLDG3 - East Exit to Roof Deck Type 2 / BLDG3 - East Exit to Roof Deck Type 2",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "Basic Wall / Interior - 3 1/8\" Partition (1-hr)",
+  "role": "interior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Interior, Core-shaft or Soffit"
+ },
+ {
+  "typeKey": "Basic Wall / MechanicalRoom",
+  "role": "interior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Interior, Core-shaft or Soffit"
+ },
+ {
+  "typeKey": "Single-Flush5 / 36\" x 84\" 2",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "Floor / 210 King - Metal_Plate",
+  "role": "floor",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Floors category"
+ },
+ {
+  "typeKey": "BLDG1 -King Facade- Arch windows level 6 ver3 / 6'2\" x 4'1.5\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "210 King - BLDG1 - Arch windows level 6 ver3 / 7' x 5'",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Double-Flush / 72\" x 84\"",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "Single-Flush4 / 36\" x 84\" 2",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "BLDG1 - Rear Door / 36\" x 84\"",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "Basic Wall / Generic - 8\" Masonry",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Basic Roof / Generic - 12\"",
+  "role": "roof",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Roofs category"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG4 - Foundation",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Foundation or Retaining, below grade is decided by level"
+ },
+ {
+  "typeKey": "BLDG1-Window-southFacade - Simple 3 Pane- Ground Level / BLDG1-Window-southFacade - Simple 3 Pane- Ground Level",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG1 - WindowSill - Ground Level / Long Window Sill",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Floor / BLDG4-FLR-Generic",
+  "role": "floor",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Floors category"
+ },
+ {
+  "typeKey": "Basic Wall / ElevatorShaft-Generic - 8\"",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Basic Wall / Generic - 8\"",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Basic Wall / Generic - 6\" Masonry",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "Single-Flush7 / 36\" x 84\" 2",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "210 King - BLDG4 - Level 1 Windows / 210 King - BLDG4 - Level 1 Windows",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG3 - North Windows Type 1 / 9' x 11'4\" 3",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "210 King - BLDG4 - North Wall - center / 210 King - BLDG4 - North Wall - center 3",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "210 King - BLDG3 - Loading dock Exit ver3 / 210 King - BLDG3 - East Exit to Roof Deck Type 1",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "Basic Wall / BLDG4 - Upper Facade",
+  "role": "exterior-wall",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Function = Exterior"
+ },
+ {
+  "typeKey": "210 King - Window - BLDG4 South Wall- Level 2 to 4 / 11'5.5\"x7'6\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "210 King - Window - BLDG4 South Wall- Level 2 to 4 Central / 8'2.25\" x 7'6\" 2",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG3 - North Windows Type 1 / 5'6\" x 11'7.5\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG3 - North Windows Type 1 / 5'6\" x 11'4\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "BLDG 1 -window Double Hung - Level 2 / 60\" x 103\"",
+  "role": "window",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Windows category"
+ },
+ {
+  "typeKey": "Single-Flush7 / 30\" x 84\" 2",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "210 King - BLDG3 - East Exit to Roof Deck Type 1 / 210 King - BLDG3 - East Exit to Roof Deck Type 1",
+  "role": "door",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Doors category"
+ },
+ {
+  "typeKey": "Basic Wall / Generic - Massing",
+  "role": "massing",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "name matches \"massing\""
+ },
+ {
+  "typeKey": "Basic Wall / Massing_Wall",
+  "role": "massing",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "name matches \"massing\""
+ },
+ {
+  "typeKey": "Basic Roof / Massing_Roof",
+  "role": "roof",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Roofs category"
+ },
+ {
+  "typeKey": "ground / ground",
+  "role": "massing",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Mass category"
+ },
+ {
+  "typeKey": "tyoicalDoubleCurvedWall / tyoicalDoubleCurvedWall",
+  "role": "massing",
+  "source": "rule",
+  "confidence": 1,
+  "reason": "Revit Mass category"
+ }
+]
