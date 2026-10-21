@@ -1,9 +1,9 @@
 import { areaWeighted, glazingTypes, uValue, type GlazingType } from '../../casa/glazing'
 import { cardinalRows } from '../../casa/orientation4'
-import { blockedOn, pendingFor, roomPlacement, scopeOf, select } from '../../casa/scope'
+import { blockedOn, mergePending, pendingFor, roomPlacement, scopeOf, select } from '../../casa/scope'
 import { GUIDE } from '../../guide'
 import { positive } from '../../params'
-import type { Element, Gap, InputValue, Measure, MeasureResult, ValueSource } from '../../types'
+import type { Element, Gap, InputValue, Measure, ValueSource } from '../../types'
 import { deriveUnits } from '../../units'
 import { buildingOf } from '../building'
 import { tallyFacade } from '../eem01'
@@ -66,7 +66,7 @@ export const C_ENV: Measure = {
     const placement = roomPlacement(snapshot)
     const inputs: InputValue[] = []
     const gaps: Gap[] = []
-    const pending: Pick<MeasureResult, 'pendingTypeKeys' | 'pendingExclusionIds'>[] = []
+    const pending: Parameters<typeof mergePending>[0] = []
 
     if (placement.unplaced) {
       gaps.push(
@@ -135,8 +135,7 @@ export const C_ENV: Measure = {
       inputs,
       gaps,
       ...(rows ? { orientations: rows } : {}),
-      pendingTypeKeys: [...new Set(pending.flatMap((p) => p.pendingTypeKeys))].sort(),
-      pendingExclusionIds: [...new Set(pending.flatMap((p) => p.pendingExclusionIds ?? []))].sort(),
+      ...mergePending(pending),
     })
   },
 }

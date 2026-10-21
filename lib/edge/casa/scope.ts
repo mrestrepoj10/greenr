@@ -11,6 +11,7 @@ export const scopeOf = (snapshot: Snapshot, classifications: Classification[], e
 })
 
 export type Selection = { used: Element[]; involved: Element[] }
+type Pending = Pick<MeasureResult, 'pendingTypeKeys' | 'pendingExclusionIds'>
 
 /** Elements classified as one of `roles` and not excluded. `involved` adds the unclassified elements of `category`, which keep the measure provisional. */
 export function select(scope: Scope, roles: readonly ElementRole[], category: RegExp): Selection {
@@ -27,7 +28,7 @@ export function select(scope: Scope, roles: readonly ElementRole[], category: Re
 }
 
 /** EEM01's rule: a pending type, or an unconfirmed exclusion over an involved element, keeps the result provisional. */
-export function pendingFor(scope: Scope, involved: Iterable<Element>): Pick<MeasureResult, 'pendingTypeKeys' | 'pendingExclusionIds'> {
+export function pendingFor(scope: Scope, involved: Iterable<Element>): Required<Pending> {
   const list = [...involved]
   return {
     pendingTypeKeys: pendingOf(
@@ -38,20 +39,25 @@ export function pendingFor(scope: Scope, involved: Iterable<Element>): Pick<Meas
   }
 }
 
+export function mergePending(parts: Pending[]): Required<Pending> {
+  return {
+    pendingTypeKeys: [...new Set(parts.flatMap((p) => p.pendingTypeKeys))].sort(),
+    pendingExclusionIds: [...new Set(parts.flatMap((p) => p.pendingExclusionIds ?? []))].sort(),
+  }
+}
+
 /** `MeasureBlocker` names only project inputs, so a missing model parameter blocks through a gap that names it in plain words. */
 export function blockedOn(code: MeasureCodeOf<'CASA'>, missing: string, message: string, typeKey = '', dbIds: number[] = []): Gap {
   return { id: `${code}:${typeKey || missing}`, measure: code, typeKey, dbIds, missing, severity: 'blocks-claim', message }
 }
 
-export type RoomPlacement = { total: number; placed: number }
+export type RoomPlacement = { total: number; placed: number; unplaced: boolean }
 
 /** TORRE A placed 6 of its 73 rooms; the envelope probe then found 17 walls of a 16-storey tower. Below half placed, the probe is not trusted. */
 export const MIN_PLACED_ROOM_SHARE = 0.5
 
-export function roomPlacement(snapshot: Snapshot): RoomPlacement & { unplaced: boolean } {
+export function roomPlacement(snapshot: Snapshot): RoomPlacement {
   const rooms = snapshot.elements.filter((e) => /Rooms/.test(e.category))
   const placed = rooms.filter((r) => r.footprint !== undefined && (r.area ?? 0) > 0).length
   return { total: rooms.length, placed, unplaced: placed === 0 || placed < rooms.length * MIN_PLACED_ROOM_SHARE }
 }
-
-export const ROOMS_UNPLACED = 'Placed rooms'
