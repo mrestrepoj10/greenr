@@ -1,4 +1,5 @@
 import { ORIENTATIONS, schemeOf, type OrientationRow, type RunResult, type Scheme } from '@/lib/edge/types'
+import { MSC_FIELDS, type MscSource } from '@/lib/edge/casa/msc'
 import { formatValue } from './manifest'
 
 export type CsvBlock = { header: readonly string[]; rows: string[][] }
@@ -67,8 +68,37 @@ export function designInputRows(run: RunResult, scheme: Scheme): string[][] {
   )
 }
 
-/** The MS&C-ordered block (Res. 0194 Anexo 3 §2) arrives with the CASA measures that compute it. */
-export const casaBlocks: (run: RunResult) => CsvBlock[] = () => []
+export const MSC_HEADER = ['msc_field', 'label', 'value', 'unit', 'measure', 'source', 'guide_doc', 'guide_page'] as const
+
+type MscCell = { value: number | string | null; measure: string; source: string }
+
+function mscCell(run: RunResult, from: MscSource): MscCell {
+  if (from.kind === 'input') {
+    const typed = from.read(run.inputs)
+    return { value: typed ?? null, measure: 'project input', source: typed === undefined ? 'missing' : 'project input' }
+  }
+  const code = from.kind === 'wwr' ? 'C-ENV' : from.code
+  const measure = run.measures.find((m) => m.code === code)
+  const missing = measure?.state === 'blocked' ? 'blocked' : 'missing'
+  if (from.kind === 'wwr') {
+    const row = measure?.orientations?.find((o) => o.orientation === from.orientation)
+    return row ? { value: (row.wwr ?? 0) * 100, measure: code, source: 'geometry' } : { value: null, measure: code, source: missing }
+  }
+  const input = measure?.inputs.find((i) => i.label === from.label)
+  if (typeof input?.value !== 'number') return { value: null, measure: code, source: missing }
+  return { value: from.percent ? input.value * 100 : input.value, measure: code, source: input.source }
+}
+
+/** Res. 0194 Anexo 3: the MS&C fields in form order. A number greenr could not measure is an explicit zero whose source says why. */
+export function mscRows(run: RunResult): string[][] {
+  return MSC_FIELDS.map((field) => {
+    const c = mscCell(run, field.from)
+    const value = typeof c.value === 'number' ? twoDecimals(c.value) : (c.value ?? (field.from.kind === 'input' ? '' : twoDecimals(0)))
+    return [field.field, field.label, value, field.unit, c.measure, c.source, field.guide.doc, field.guide.page]
+  })
+}
+
+export const casaBlocks = (run: RunResult): CsvBlock[] => [{ header: MSC_HEADER, rows: mscRows(run) }]
 
 const SCHEME_BLOCKS: Record<Scheme, (run: RunResult) => CsvBlock[]> = {
   EDGE: (run) => [

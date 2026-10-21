@@ -149,8 +149,12 @@ describe('a run checked for EDGE and CASA', () => {
   test('writes one CSV per scheme; the EDGE file is the one an EDGE-only run writes', () => {
     expect(inputsCsv(fixtureBothRun, 'EDGE')).toBe(inputsCsv(fixtureRun, 'EDGE'))
     const casa = inputsCsv(fixtureBothRun, 'CASA').split('\r\n')
-    expect(casa[0]).toBe('measure,label,value,unit,source,guide_doc,guide_page')
-    expect(casa.slice(1, -1)).toEqual(['C-FLOOD,Lowest habitable floor,2.40,m,rooms,CASA Colombia,68'])
+    expect(casa.slice(0, 4)).toEqual([
+      'measure,label,value,unit,source,guide_doc,guide_page',
+      'C-FLOOD,Lowest habitable floor,2.40,m,rooms,CASA Colombia,68',
+      '',
+      'msc_field,label,value,unit,measure,source,guide_doc,guide_page',
+    ])
     expect(casa.at(-1)).toBe('')
   })
 
