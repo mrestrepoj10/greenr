@@ -14,6 +14,9 @@ export const ELEVATION_LABELS: Record<ElevationSide, string> = {
   W: 'West elevation',
 }
 
+/** Every elevation PNG has this size, whatever the size of the canvas on screen. */
+export const ELEVATION_SIZE = { width: 1600, height: 1000 } as const
+
 const SHOT_TIMEOUT_MS = 30_000
 
 type Three = typeof THREE
@@ -74,7 +77,7 @@ export type ElevationOptions = {
 }
 
 /**
- * Four orthographic elevations at the canvas size, N, E, S, W of true north, each looking at that face of the building.
+ * Four orthographic elevations at ELEVATION_SIZE, N, E, S, W of true north, each looking at that face of the building.
  * The person's camera, projection and visibility come back afterwards.
  */
 export async function captureElevations(viewer: APSViewer3D, options: ElevationOptions): Promise<ElevationImage[]> {
@@ -90,8 +93,7 @@ export async function captureElevations(viewer: APSViewer3D, options: ElevationO
   const size = box.getSize(new T.Vector3())
   const reach = Math.max(size.x, size.y, size.z) * 3
   const up = nav.getWorldUpVector()
-  const width = viewer.container.clientWidth
-  const height = viewer.container.clientHeight
+  const { width, height } = ELEVATION_SIZE
   const images: ElevationImage[] = []
   try {
     if (hidden.length > 0) viewer.hide(hidden)
@@ -102,6 +104,8 @@ export async function captureElevations(viewer: APSViewer3D, options: ElevationO
       const position = new T.Vector3(center.x + Math.sin(a) * reach, center.y + Math.cos(a) * reach, center.z)
       nav.setView(position, center.clone())
       nav.setCameraUpVector(up)
+      // fitToView frames for the camera's aspect, and each screenshot resets it to the canvas, so set the image's before every fit.
+      nav.getCamera().aspect = width / height
       viewer.fitToView([...options.dbIds], model, true)
       images.push({ label: ELEVATION_LABELS[side], png: await screenshotPng(viewer, width, height) })
     }

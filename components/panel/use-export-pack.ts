@@ -1,5 +1,6 @@
 'use client'
 
+import { upload } from '@vercel/blob/client'
 import { useCallback, useState } from 'react'
 import type { EdgeRun } from '@/components/panel/use-edge-run'
 import { buildPack } from '@/lib/export/pack'
@@ -78,16 +79,15 @@ export function useExportPack({ edge, getViewer, model, colouring }: UseExportPa
         appVersion: APP_VERSION,
       })
       setStatus({ kind: 'uploading' })
-      const response = await fetch('/api/export', {
-        method: 'POST',
-        headers: { 'content-type': 'application/zip', 'x-run-id': run.runId, 'x-project': model.slug },
-        body: new Blob([pack.zip as BlobPart], { type: 'application/zip' }),
+      const size = pack.zip.byteLength
+      const blob = await upload(`packs/${model.slug}/${run.runId}.zip`, new Blob([pack.zip as BlobPart], { type: 'application/zip' }), {
+        access: 'public',
+        handleUploadUrl: '/api/export',
+        contentType: 'application/zip',
       })
-      const body = (await response.json()) as { url?: string; size?: number; error?: string }
-      if (!response.ok || !body.url) throw new Error(body.error ?? messages.exportStatus.failed)
       const runDocId = await edge.markExported()
-      if (runDocId) await savePack(runDocId, body.url, body.size ?? pack.zip.byteLength, pack.manifest)
-      setStatus({ kind: 'done', url: body.url, size: body.size ?? pack.zip.byteLength })
+      if (runDocId) await savePack(runDocId, blob.url, size, pack.manifest)
+      setStatus({ kind: 'done', url: blob.url, size })
     } catch (error) {
       setStatus({ kind: 'failed', message: error instanceof Error && error.message ? error.message : messages.exportStatus.failed })
     } finally {

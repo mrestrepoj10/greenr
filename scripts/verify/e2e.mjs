@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { strFromU8, unzipSync } from 'fflate'
+import { PDFDict, PDFDocument, PDFName } from 'pdf-lib'
 import { createBrowser, createChecks } from './lib/browser.mjs'
 
 const BASE_URL = (process.env.BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '')
@@ -20,6 +21,8 @@ const EXPECTED_VIEW = 'New Construction'
 const CHECK_BUDGET_MS = 60_000
 const ORDER = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
 const MEASURE_PDFS = 8
+const ELEVATIONS = 4
+const ELEVATION_SIZE = '1600x1000'
 const UNDONE = 'rule:party-wall'
 
 const b = createBrowser({ session: SESSION, bypass: process.env.VERCEL_AUTOMATION_BYPASS_SECRET })
@@ -245,13 +248,33 @@ try {
   const names = Object.keys(zip)
   const pdfs = names.filter((n) => n.endsWith('.pdf'))
   check(pdfs.length === MEASURE_PDFS, '6. one PDF per measure', pdfs)
+  const imagesPerPage = Object.fromEntries(
+    await Promise.all(
+      pdfs.map(async (n) => {
+        const pages = (await PDFDocument.load(zip[n])).getPages()
+        const images = pages.map((p) => p.node.Resources()?.lookup(PDFName.of('XObject')))
+        return [n.split('_')[0], images.map((x) => (x instanceof PDFDict ? x.keys().length : 0)).join('')]
+      }),
+    ),
+  )
+  check(
+    Object.values(imagesPerPage).every((s) => new RegExp(`^0+1{${ELEVATIONS}}$`).test(s)),
+    '6. every PDF has its table pages, then one page per elevation',
+    imagesPerPage,
+  )
   const csv = strFromU8(zip['edge-inputs.csv'] ?? new Uint8Array())
   const csvRows = csv.split('\n').filter((l) => l.startsWith('EEM01,') && ORDER.includes(l.split(',')[1]))
   check(csvRows.length === 8 && csvRows.some((l) => l.includes(',0.00,0.00,0.00,')), '6. CSV has eight EEM01 rows with explicit zeros', csvRows.length)
   console.log(`pack WWR (CSV, percent): ${csvRows.map((l) => `${l.split(',')[1]} ${l.split(',')[4]}`).join(', ')}`)
   const manifest = JSON.parse(strFromU8(zip['manifest.json'] ?? new Uint8Array()))
   check(manifest.runId && Array.isArray(manifest.documents), '6. JSON manifest lists the documents', manifest.documents?.length)
-  check(names.filter((n) => n.startsWith('elevations/')).length === 4, '6. four elevations in the pack', names.filter((n) => n.startsWith('elevations/')))
+  const elevations = names.filter((n) => n.startsWith('elevations/'))
+  const sizes = elevations.map((n) => {
+    const view = new DataView(zip[n].buffer, zip[n].byteOffset)
+    return `${view.getUint32(16)}x${view.getUint32(20)}`
+  })
+  check(elevations.length === ELEVATIONS, '6. four elevations in the pack', elevations)
+  check(sizes.every((s) => s === ELEVATION_SIZE), `6. every elevation is ${ELEVATION_SIZE} whatever the canvas`, sizes)
   shot('export')
 
   b.ab(['reload'])

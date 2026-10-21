@@ -16,9 +16,6 @@ export type Pack = { zip: Uint8Array; manifest: PackManifest }
 
 const encoder = new TextEncoder()
 
-/** Façade elevations are evidence for the window-to-wall ratio, so only that measure's PDF carries them as pages. */
-export const ELEVATION_MEASURE = 'EEM01'
-
 /** Entry order is manifest, CSV, one PDF per measure in run order, then elevations, so two packs from the same run list identically. */
 export async function buildPack(run: RunResult, images: ElevationImage[], meta: PackMeta): Promise<Pack> {
   const stamped: PackMeta = { ...meta, generatedAt: meta.generatedAt ?? new Date().toISOString() }
@@ -33,8 +30,7 @@ export async function buildPack(run: RunResult, images: ElevationImage[], meta: 
   }
   for (const measure of run.measures) {
     const fileName = documentFileName(measure.code, stamped.version ?? 1, 'pdf')
-    const pages = measure.code === ELEVATION_MEASURE ? images : []
-    entries[fileName] = [await measurePdf(run, measure.code, pages, stamped), text]
+    entries[fileName] = [await measurePdf(run, measure.code, images, stamped), text]
   }
   for (const image of images) entries[elevationFileName(image.label)] = [image.png, binary]
 

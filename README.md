@@ -17,7 +17,7 @@ greenr computes inputs only. Savings are calculated in the EDGE App. It never sh
 - **Lists gaps** next to their EDGE code and guide page. Glazing types with no U, SHGC or VT value go under EEM09. Roof types with no SRI go under EEM02.
 - **Asks before it decides.** Element types are classified by a rules table first, then by a decision model through the Vercel AI Gateway. Low-confidence types and proposed exclusions, such as site massing and below-grade walls, wait for a person. Values stay provisional until every pending item is confirmed. Every accepted or rejected exclusion and every confirmed type stays listed under **Decided** with an Undo, and the numbers recompute when you undo.
 - **Colours the model** by WWR and selects the elements behind every row and gap.
-- **Exports an evidence pack.** One PDF per measure with the entered values highlighted, a CSV that mirrors the EDGE per-orientation calculator with explicit zeros, four elevation PNGs and a JSON manifest. Versioned file names follow the auditor guide.
+- **Exports an evidence pack.** One PDF per measure with the entered values highlighted and the four elevations as its last pages, a CSV that mirrors the EDGE per-orientation calculator with explicit zeros, the elevation PNGs at 1600 x 1000 and a JSON manifest. Versioned file names follow the auditor guide. The browser uploads the zip straight to Vercel Blob, after `/api/export` hands it a token for `packs/<project>/<run id>.zip`.
 - **Runs an agent in the panel.** It explores the model with the same tools, proposes exclusions, and answers questions with cards you can click.
 
 ![The gaps list, each with its EDGE code and guide page](docs/media/gaps.png)
