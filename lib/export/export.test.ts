@@ -1,21 +1,37 @@
 import { PDFDocument } from 'pdf-lib'
-import { strFromU8, unzipSync } from 'fflate'
+import { strFromU8, unzipSync, unzlibSync } from 'fflate'
 import { describe, expect, test } from 'vitest'
 import { ORIENTATIONS } from '@/lib/edge/types'
-import { edgeInputsCsv } from './csv'
-import { fixtureMeta, fixtureRun } from './fixture'
+import { inputsCsv } from './csv'
+import { fixtureBothRun, fixtureMeta, fixtureRun } from './fixture'
 import { buildManifest } from './manifest'
 import { buildPack } from './pack'
 import { measurePdf } from './pdf'
 import { placeholderPng } from './placeholder-png'
+
+/** The text a PDF draws, one string per text run, from its Flate content streams. */
+function pdfText(bytes: Uint8Array): string {
+  const raw = strFromU8(bytes, true)
+  const runs: string[] = []
+  for (const m of raw.matchAll(/stream\r?\n([\s\S]*?)endstream/g)) {
+    let body: string
+    try {
+      body = strFromU8(unzlibSync(Uint8Array.from(m[1], (c) => c.charCodeAt(0))), true)
+    } catch {
+      continue
+    }
+    for (const t of body.matchAll(/<([0-9A-Fa-f]*)> Tj/g)) runs.push(String.fromCharCode(...(t[1].match(/../g) ?? []).map((h) => parseInt(h, 16))))
+  }
+  return runs.join(' ')
+}
 
 const images = [
   { label: 'North elevation', png: placeholderPng(64, 32, [200, 220, 240]) },
   { label: 'South elevation', png: placeholderPng(64, 32, [240, 220, 200]) },
 ]
 
-describe('edgeInputsCsv', () => {
-  const lines = edgeInputsCsv(fixtureRun).split('\r\n')
+describe('inputsCsv for EDGE', () => {
+  const lines = inputsCsv(fixtureRun, 'EDGE').split('\r\n')
   const headerIndex = lines.findIndex((l) => l.startsWith('measure,orientation,wall_area_m2'))
   const eem01 = lines.slice(headerIndex + 1, headerIndex + 9)
 
@@ -47,7 +63,7 @@ describe('edgeInputsCsv', () => {
 
   test('the run without an EEM01 measure still writes eight zero rows', () => {
     const run = { ...fixtureRun, measures: fixtureRun.measures.filter((m) => m.code !== 'EEM01') }
-    const rows = edgeInputsCsv(run).split('\r\n').filter((l) => l.startsWith('EEM01,'))
+    const rows = inputsCsv(run, 'EDGE').split('\r\n').filter((l) => l.startsWith('EEM01,'))
     expect(rows).toHaveLength(8)
     expect(rows.every((r) => r.includes(',0.00,0.00,0.00,'))).toBe(true)
   })
@@ -114,7 +130,7 @@ describe('buildPack', () => {
       'elevations/South_elevation.png',
     ])
     expect(JSON.parse(strFromU8(entries['manifest.json']))).toEqual(manifest)
-    expect(strFromU8(entries['edge-inputs.csv'])).toBe(edgeInputsCsv(fixtureRun))
+    expect(strFromU8(entries['edge-inputs.csv'])).toBe(inputsCsv(fixtureRun, 'EDGE'))
     expect(entries['elevations/North_elevation.png']).toEqual(images[0].png)
     for (const d of manifest.documents) expect(entries[d.fileName], d.fileName).toBeDefined()
   })
@@ -127,5 +143,57 @@ describe('buildPack', () => {
       const doc = await PDFDocument.load(entries[file])
       expect(doc.getPageCount(), m.code).toBe(1 + images.length)
     }
+  })
+})
+
+describe('a run checked for EDGE and CASA', () => {
+  test('writes one CSV per scheme; the EDGE file is the one an EDGE-only run writes', () => {
+    expect(inputsCsv(fixtureBothRun, 'EDGE')).toBe(inputsCsv(fixtureRun, 'EDGE'))
+    const casa = inputsCsv(fixtureBothRun, 'CASA').split('\r\n')
+    expect(casa[0]).toBe('measure,label,value,unit,source,guide_doc,guide_page')
+    expect(casa.slice(1, -1)).toEqual(['C-FLOOD,Lowest habitable floor,2.40,m,rooms,CASA Colombia,68'])
+    expect(casa.at(-1)).toBe('')
+  })
+
+  test('the manifest names both schemes, both guide versions and both disclaimers', () => {
+    const manifest = buildManifest(fixtureBothRun, fixtureMeta)
+    expect(manifest.schemes).toEqual(['EDGE', 'CASA'])
+    expect(manifest.guides).toEqual({ EDGE: 'V3.1', CASA: '3.1 (Edición 2026)' })
+    expect(manifest.disclaimer).toBe(
+      'Inputs only. Savings are calculated in the EDGE App. Pre-check only. Credits are awarded by CCCS/GBCI on the Arc platform.',
+    )
+    expect(manifest.documents.filter((d) => d.kind === 'csv').map((d) => [d.fileName, d.title])).toEqual([
+      ['edge-inputs.csv', 'EDGE App inputs'],
+      ['casa-inputs.csv', 'CASA Colombia pre-check inputs'],
+    ])
+    expect(manifest.documents.find((d) => d.measure === 'C-ENV')?.fileName).toBe('C-ENV_Envelope_Sheet-01.pdf')
+    const text = JSON.stringify(manifest).toLowerCase().replace('savings are calculated in the edge app', '')
+    expect(text).not.toMatch(/saving|pass\b|fail/)
+  })
+
+  test('the pack lists the manifest, the EDGE CSV, the CASA CSV, then every PDF in run order', async () => {
+    const { zip, manifest } = await buildPack(fixtureBothRun, [], fixtureMeta)
+    const names = Object.keys(unzipSync(zip))
+    expect(names.slice(0, 3)).toEqual(['manifest.json', 'edge-inputs.csv', 'casa-inputs.csv'])
+    expect(names.slice(3)).toEqual(fixtureBothRun.measures.map((m) => manifest.documents.find((d) => d.measure === m.code)!.fileName))
+  })
+
+  test('a CASA PDF carries the CASA heading, disclaimer, credits and citation, and says why it is blocked', async () => {
+    const text = pdfText(await measurePdf(fixtureBothRun, 'C-FLOOD', [], fixtureMeta))
+    expect(text).toContain('Pre-check only. Credits are awarded by CCCS/GBCI on the Arc platform.')
+    expect(text).toContain('Inputs for the CASA Colombia pre-check')
+    expect(text).toContain('CASA Colombia 3.1 (Edici\u00f3n 2026)')
+    expect(text).toContain('CCRp3, CCRc4')
+    expect(text).toContain('CASA Colombia, 3.1 (Edici\u00f3n 2026), p. 68')
+    expect(text).toContain('blocked: needs the project input Road grade elevation')
+    expect(text).not.toContain('EDGE App')
+  })
+
+  test('an EDGE PDF keeps the EDGE wording', async () => {
+    const text = pdfText(await measurePdf(fixtureBothRun, 'EEM01', [], fixtureMeta))
+    expect(text).toContain('Inputs only. Savings are calculated in the EDGE App.')
+    expect(text).toContain('Inputs for the EDGE App')
+    expect(text).toContain('EDGE Part 3, V3.1, p. 14')
+    expect(text).not.toContain('CASA')
   })
 })

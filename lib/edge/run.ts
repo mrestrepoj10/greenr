@@ -1,6 +1,6 @@
 import { GUIDE_VERSIONS } from './guide'
 import { runMeasures } from './measures'
-import type { Classification, Exclusion, RunResult, RunScope, Snapshot } from './types'
+import { SCHEMES, type Classification, type Exclusion, type RunResult, type RunScope, type Snapshot } from './types'
 
 function fnv1a(s: string): string {
   let h = 0x811c9dc5
@@ -37,7 +37,7 @@ export function computeRun(
   return {
     runId: prev && snapshotKey(prev.snapshot) === key ? prev.runId : `run-${fnv1a(key)}`,
     state: waiting ? 'provisional' : 'confirmed',
-    schemes,
+    schemes: SCHEMES.filter((s) => schemes.includes(s)),
     guides: GUIDE_VERSIONS,
     inputs,
     snapshot: {

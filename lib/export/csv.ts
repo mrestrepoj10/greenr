@@ -1,5 +1,8 @@
-import { ORIENTATIONS, type OrientationRow, type RunResult } from '@/lib/edge/types'
+import { ORIENTATIONS, schemeOf, type OrientationRow, type RunResult, type Scheme } from '@/lib/edge/types'
 import { formatValue } from './manifest'
+
+/** One table in a scheme's CSV: a header row and its rows. Blocks are separated by a blank line. */
+export type CsvBlock = { header: readonly string[]; rows: string[][] }
 
 export const DESIGN_INPUTS_HEADER = ['measure', 'label', 'value', 'unit', 'source', 'guide_doc', 'guide_page'] as const
 
@@ -51,8 +54,8 @@ export function eem01Rows(run: RunResult): string[][] {
   })
 }
 
-export function designInputRows(run: RunResult): string[][] {
-  return run.measures.flatMap((m) =>
+export function designInputRows(run: RunResult, scheme: Scheme): string[][] {
+  return run.measures.filter((m) => schemeOf(m.code) === scheme).flatMap((m) =>
     m.inputs.map((input) => [
       m.code,
       input.label,
@@ -65,13 +68,19 @@ export function designInputRows(run: RunResult): string[][] {
   )
 }
 
-export function edgeInputsCsv(run: RunResult): string {
-  const lines = [
-    line(DESIGN_INPUTS_HEADER),
-    ...designInputRows(run).map(line),
-    '',
-    line(EEM01_HEADER),
-    ...eem01Rows(run).map(line),
-  ]
-  return lines.join('\r\n') + '\r\n'
+/** The MS&C-ordered block (Res. 0194 Anexo 3 §2) arrives with the CASA measures that compute it. */
+export const casaBlocks: (run: RunResult) => CsvBlock[] = () => []
+
+const SCHEME_BLOCKS: Record<Scheme, (run: RunResult) => CsvBlock[]> = {
+  EDGE: (run) => [
+    { header: DESIGN_INPUTS_HEADER, rows: designInputRows(run, 'EDGE') },
+    { header: EEM01_HEADER, rows: eem01Rows(run) },
+  ],
+  CASA: (run) => [{ header: DESIGN_INPUTS_HEADER, rows: designInputRows(run, 'CASA') }, ...casaBlocks(run)],
+}
+
+/** One CSV per scheme, so each file holds only what its own app, calculator or form takes. */
+export function inputsCsv(run: RunResult, scheme: Scheme): string {
+  const blocks = SCHEME_BLOCKS[scheme](run).map((block) => [line(block.header), ...block.rows.map(line)].join('\r\n'))
+  return blocks.join('\r\n\r\n') + '\r\n'
 }

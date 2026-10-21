@@ -1,9 +1,9 @@
 import { zipSync, type Zippable } from 'fflate'
 import type { RunResult } from '@/lib/edge/types'
-import { edgeInputsCsv } from './csv'
+import { inputsCsv } from './csv'
 import {
-  CSV_FILE_NAME,
   MANIFEST_FILE_NAME,
+  SCHEME_EXPORT,
   buildManifest,
   documentFileName,
   elevationFileName,
@@ -16,7 +16,7 @@ export type Pack = { zip: Uint8Array; manifest: PackManifest }
 
 const encoder = new TextEncoder()
 
-/** Entry order is manifest, CSV, one PDF per measure in run order, then elevations, so two packs from the same run list identically. */
+/** Entry order is manifest, one CSV per scheme, one PDF per measure in run order, then elevations, so two packs from the same run list identically. */
 export async function buildPack(run: RunResult, images: ElevationImage[], meta: PackMeta): Promise<Pack> {
   const stamped: PackMeta = { ...meta, generatedAt: meta.generatedAt ?? new Date().toISOString() }
   const manifest = buildManifest(run, stamped, images.map((i) => i.label))
@@ -26,8 +26,8 @@ export async function buildPack(run: RunResult, images: ElevationImage[], meta: 
 
   const entries: Zippable = {
     [MANIFEST_FILE_NAME]: [encoder.encode(JSON.stringify(manifest, null, 2)), text],
-    [CSV_FILE_NAME]: [encoder.encode(edgeInputsCsv(run)), text],
   }
+  for (const scheme of run.schemes) entries[SCHEME_EXPORT[scheme].csvFileName] = [encoder.encode(inputsCsv(run, scheme)), text]
   for (const measure of run.measures) {
     const fileName = documentFileName(measure.code, stamped.version ?? 1, 'pdf')
     entries[fileName] = [await measurePdf(run, measure.code, images, stamped), text]

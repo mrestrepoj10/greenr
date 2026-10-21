@@ -208,8 +208,8 @@ describe('schemes', () => {
     expect(casa.measures.map((m) => m.code)).toEqual([...MEASURE_CODES.CASA])
   })
 
-  test('the run records its schemes, the inputs it read and the guide version per scheme', () => {
-    expect(both.schemes).toEqual(['CASA', 'EDGE'])
+  test('the run records its schemes in scheme order, the inputs it read and the guide version per scheme', () => {
+    expect(both.schemes).toEqual(['EDGE', 'CASA'])
     expect(both.inputs).toEqual({ climateZone: 'templado' })
     expect(both.guides).toEqual({ EDGE: 'V3.1', CASA: '3.1 (Edición 2026)' })
   })

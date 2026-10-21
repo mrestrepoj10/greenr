@@ -1,4 +1,4 @@
-import type { ElementRole, ExclusionReason, ExclusionStatus, RunState, ValueSource } from '@/lib/edge/types'
+import type { ElementRole, ExclusionReason, ExclusionStatus, ProjectInputKey, RunState, ValueSource } from '@/lib/edge/types'
 
 export const messages = {
   app: 'greenr',
@@ -76,6 +76,22 @@ export const messages = {
     },
   },
   inputs: { title: 'Design inputs' },
+  projectInputs: {
+    title: 'Project inputs',
+    fields: {
+      typology: { label: 'Typology' },
+      housingForm: { label: 'Housing form' },
+      municipality: { label: 'Municipality, DIVIPOLA code' },
+      municipalityCategory: { label: 'Municipality category' },
+      climateZone: { label: 'Climate zone' },
+      roadGradeM: { label: 'Road grade elevation', unit: 'm' },
+      floodElevationM: { label: 'Flood elevation', unit: 'm' },
+      floodReturnYears: { label: 'Flood return period', unit: 'years' },
+      inFloodplain: { label: 'Inside a floodplain' },
+      datumOffsetM: { label: 'Survey datum offset', unit: 'm' },
+      projectAreaM2: { label: 'Project area', unit: 'm²' },
+    } satisfies Record<ProjectInputKey, { label: string; unit?: string }>,
+  },
   dev: {
     terminal: 'fx terminal, the assistant tools as viewer commands. Ctrl+` hides it.',
     close: 'Close the terminal',

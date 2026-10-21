@@ -1,9 +1,11 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb, type RGB } from 'pdf-lib'
 import { citation } from '@/lib/edge/guide'
-import type { MeasureCode, MeasureResult, RunResult } from '@/lib/edge/types'
+import { MEASURES } from '@/lib/edge/measures'
+import { schemeOf, type MeasureCode, type MeasureResult, type RunResult } from '@/lib/edge/types'
 import {
-  DISCLAIMER,
   MEASURE_TITLES,
+  SCHEME_EXPORT,
+  describeBlocker,
   describeExclusion,
   describeNorth,
   documentFileName,
@@ -179,6 +181,8 @@ export async function measurePdf(
   const generatedAt = meta.generatedAt ?? new Date().toISOString()
   const fileName = documentFileName(code, version, 'pdf')
   const title = `${code} ${MEASURE_TITLES[code]}`
+  const scheme = schemeOf(code)
+  const strings = SCHEME_EXPORT[scheme]
 
   const doc = await PDFDocument.create()
   doc.setTitle(title)
@@ -189,7 +193,7 @@ export async function measurePdf(
   doc.setCreationDate(new Date(generatedAt))
   const font = await doc.embedFont(StandardFonts.Helvetica)
   const bold = await doc.embedFont(StandardFonts.HelveticaBold)
-  const sheet = new Sheet(doc, font, bold, `${DISCLAIMER} ${fileName}, ${generatedAt}, ${meta.author}.`)
+  const sheet = new Sheet(doc, font, bold, `${strings.disclaimer} ${fileName}, ${generatedAt}, ${meta.author}.`)
 
   sheet.text(title, 16, bold)
   sheet.text(meta.projectName, 11, font, MUTED)
@@ -208,13 +212,15 @@ export async function measurePdf(
       ['Model URN', run.snapshot.modelUrn],
       ['Viewable', run.snapshot.viewableName],
       ['Snapshot taken', run.snapshot.takenAt],
+      ['Scheme', `${strings.name} ${run.guides[scheme]}`],
+      ['Serves', MEASURES[code].credits.join(', ')],
       ['Guide', `${citation(measure.guide)}, ${measure.guide.title}`],
-      ['Measure state', measure.state],
+      ['Measure state', measure.blockedBy?.length ? `${measure.state}: ${measure.blockedBy.map(describeBlocker).join('; ')}` : measure.state],
     ],
   )
 
-  sheet.heading('Inputs for the EDGE App')
-  sheet.text('Highlighted cells are the values entered in the EDGE App.', 8, font, MUTED)
+  sheet.heading(strings.inputsHeading)
+  sheet.text(strings.enteredNote, 8, font, MUTED)
   sheet.gap(4)
   sheet.table(
     [
