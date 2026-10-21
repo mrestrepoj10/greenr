@@ -17,10 +17,12 @@ export function PanelEmpty() {
   )
 }
 
-export function PanelSkeleton() {
+export function PanelSkeleton({ status }: { status?: string }) {
   return (
     <div className="flex flex-col gap-4 border-t px-4 py-4" data-testid="panel-skeleton" aria-busy>
-      <p className="text-sm text-muted-foreground">{messages.measuring}</p>
+      <p className="text-sm text-muted-foreground" data-testid="run-progress" aria-live="polite">
+        {status ?? messages.measuring}
+      </p>
       <div className="flex flex-col gap-2">
         {Array.from({ length: 8 }, (_, i) => (
           <div key={i} className="flex items-center gap-3">

@@ -53,4 +53,11 @@ describe('run codec', () => {
     expect(stored.exclusions.map((e) => e.status)).toEqual(['proposed', 'accepted'])
     expect('note' in stored.exclusions[1]).toBe(false)
   })
+
+  it('leaves rejected exclusions out of a rebuilt run', () => {
+    const stored = toStoredRun(fixtureRun)
+    const rows = stored.exclusions.map((row, i) => (i === 0 ? { ...row, status: 'rejected' as const } : row))
+    const rebuilt = fromStoredRun(stored.run, stored.elements, stored.classifications, rows)
+    expect(rebuilt.exclusions.map((e) => e.id)).toEqual(fixtureRun.exclusions.slice(1).map((e) => e.id))
+  })
 })

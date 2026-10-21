@@ -18,6 +18,12 @@ export const messages = {
     ],
   },
   measuring: 'Reading the model and measuring. Rows fill in as measures finish.',
+  phase: {
+    snapshot: 'Reading walls, glazing, roofs, levels and rooms from the model.',
+    classifying: (n: number) => `Classifying ${n} ${n === 1 ? 'type' : 'types'} the rules could not settle.`,
+    measuring: 'Measuring the EDGE inputs.',
+  },
+  storedRun: (when: string) => `Last check, ${when}. Check again to read the model afresh.`,
   provisionalNote: 'Values are provisional until every pending type is confirmed.',
   needsConfirmation: 'Needs your confirmation',
   nothingPending: 'Nothing pending. Every type and exclusion is confirmed.',
@@ -105,5 +111,8 @@ export const messages = {
   errors: {
     viewerNotReady: 'The viewer is still loading. Try again once the model is in.',
     checkFailed: 'The check did not finish. The viewer stayed as it was.',
+    saveFailed: 'The last change shows here but did not reach the project store. Check again to retry.',
+    unclassified: (n: number) =>
+      `${n} ${n === 1 ? 'type' : 'types'} could not be classified automatically. Confirm ${n === 1 ? 'it' : 'them'} under Needs your confirmation.`,
   },
 } as const

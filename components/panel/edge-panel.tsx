@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useViewer } from '@/components/viewer/viewer-bridge'
 import type { ElementRole, RunResult, RunState } from '@/lib/edge/types'
+import { pendingTypes } from '@/lib/run/pipeline'
 import { messages } from '@/lib/ui/messages'
 import { isolateDbIds } from '@/lib/viewer/color'
 
@@ -22,7 +23,11 @@ export interface EdgePanelProps {
   run: RunResult | null
   state: RunState
   error?: string | null
-  /** Element ids behind a type key, for isolating a pending type. The engine supplies this later. */
+  /** The phase line while a check runs, for example how many types are being classified. */
+  progress?: string
+  /** "stored" when the run shown is the last one saved for the project, not one measured in this session. */
+  origin?: 'live' | 'stored' | null
+  /** Element ids behind a type key, for isolating a pending type. */
   elementsOf?: (typeKey: string) => number[]
   colouring?: { on: boolean; onChange: (on: boolean) => void }
   onCheck?: () => void
@@ -32,13 +37,14 @@ export interface EdgePanelProps {
   onExport?: () => void
 }
 
-const PENDING_THRESHOLD = 0.6
 const noElements = () => []
 
 export function EdgePanel({
   run,
   state,
   error,
+  progress,
+  origin,
   elementsOf = noElements,
   colouring,
   onCheck,
@@ -62,7 +68,7 @@ export function EdgePanel({
   )
 
   const eem01 = run?.measures.find((m) => m.code === 'EEM01')
-  const pending = run?.classifications.filter((c) => c.source === 'model' && c.confidence < PENDING_THRESHOLD) ?? []
+  const pending = run ? pendingTypes(run) : []
   const measuring = state === 'measuring' || state === 'snapshot' || state === 'classifying' || state === 'loading'
 
   return (
@@ -70,10 +76,15 @@ export function EdgePanel({
       <PanelHeader state={state} hasRun={run !== null} onCheck={onCheck} onExport={onExport} />
       {error ? <InlineAlert>{error}</InlineAlert> : null}
       <ScrollArea className="min-h-0 flex-1">
-        {measuring ? <PanelSkeleton /> : null}
+        {measuring ? <PanelSkeleton status={progress} /> : null}
         {!measuring && !run ? <PanelEmpty /> : null}
         {!measuring && run ? (
           <>
+            {origin === 'stored' ? (
+              <p className="px-4 pb-2 text-xs text-muted-foreground" data-testid="stored-run">
+                {messages.storedRun(new Date(run.computedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }))}
+              </p>
+            ) : null}
             {run.state === 'provisional' ? (
               <p className="px-4 pb-3 text-xs text-muted-foreground">{messages.provisionalNote}</p>
             ) : null}

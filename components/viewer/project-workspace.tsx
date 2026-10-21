@@ -4,25 +4,58 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 import { EdgePanel } from '@/components/panel/edge-panel'
-import { useEdgeRun } from '@/components/panel/use-edge-run'
+import { phaseMessage, useEdgeRun } from '@/components/panel/use-edge-run'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { ProjectViewer } from '@/components/viewer/project-viewer'
 import { StageLegend } from '@/components/viewer/stage-legend'
 import { useViewer, ViewerBridgeProvider } from '@/components/viewer/viewer-bridge'
 import type { OrientationRow } from '@/lib/edge/types'
 import type { BucketModel } from '@/lib/models/types'
+import { useProject, useUpsertProject } from '@/lib/persist/hooks'
 import { messages } from '@/lib/ui/messages'
-import { dbIdsForType } from '@/lib/ui/mock-run'
-import { clearTheming, colorByOrientation } from '@/lib/viewer/color'
+import { clearTheming, colorByOrientation, ghostDbIds } from '@/lib/viewer/color'
 
 export interface ProjectWorkspaceProps {
   model: BucketModel
   viewableName?: string
 }
 
-export function ProjectWorkspace({ model, viewableName }: ProjectWorkspaceProps) {
-  const edge = useEdgeRun()
-  const run = edge.store.run
+export function ProjectWorkspace(props: ProjectWorkspaceProps) {
+  return (
+    <ViewerBridgeProvider>
+      <Workspace {...props} />
+    </ViewerBridgeProvider>
+  )
+}
+
+/** The project row is keyed by slug. It is created once; later loads keep the north the person set. */
+function useProjectRow(model: BucketModel, viewableName: string | undefined) {
+  const project = useProject(model.slug)
+  const upsert = useUpsertProject()
+  useEffect(() => {
+    if (project !== null) return
+    void upsert({
+      slug: model.slug,
+      modelUrn: model.urn,
+      modelName: model.name,
+      viewableName: viewableName ?? '',
+      viewableGuid: model.preferredViewable ?? '',
+      northAngleDeg: 0,
+      northSource: 'project',
+    })
+  }, [project, upsert, model, viewableName])
+  return project ?? null
+}
+
+function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
+  const { getViewer, isModelLoaded } = useViewer()
+  const project = useProjectRow(model, viewableName)
+  const edge = useEdgeRun({
+    projectId: project?._id ?? null,
+    getViewer,
+    userNorth: project?.northSource === 'user' ? project.northAngleDeg : undefined,
+  })
+  const run = edge.run
   // Every new run starts coloured; the person turns colouring off per run.
   const [colourOffFor, setColourOffFor] = useState<string | null>(null)
   const colourOn = run !== null && colourOffFor !== run.runId
@@ -31,46 +64,50 @@ export function ProjectWorkspace({ model, viewableName }: ProjectWorkspaceProps)
   const rows = run?.measures.find((m) => m.code === 'EEM01')?.orientations
 
   return (
-    <ViewerBridgeProvider>
-      <div className="flex h-dvh flex-col">
-        <header className="flex h-12 shrink-0 items-center gap-3 border-b px-4 text-sm">
-          <Link href="/" className="text-muted-foreground hover:text-foreground">
-            {messages.app}
-          </Link>
-          <span className="text-muted-foreground">/</span>
-          <h1 className="truncate font-medium" data-testid="model-name">
-            {model.name}
-          </h1>
-          {viewableName ? <span className="font-mono text-xs text-muted-foreground">{viewableName}</span> : null}
-          <UnitsChip units={run?.snapshot.units} />
-          <Link href="/" className="ml-auto text-xs text-muted-foreground hover:text-foreground" data-testid="projects-link">
-            {messages.projects}
-          </Link>
-        </header>
-        <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1">
-          <ResizablePanel defaultSize="70%" minSize={320} className="min-w-0">
-            <ProjectViewer urn={model.urn} viewableName={viewableName}>
-              <StageColouring rows={colourOn ? rows : undefined} onClear={() => setColourOn(false)} />
-            </ProjectViewer>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={400} minSize={380} maxSize={640} className="min-w-0">
-            <EdgePanel
-              run={run}
-              state={edge.state}
-              error={edge.store.error}
-              elementsOf={dbIdsForType}
-              colouring={{ on: colourOn && rows !== undefined, onChange: setColourOn }}
-              onCheck={edge.check}
-              onConfirmType={edge.confirmType}
-              onDecideExclusion={edge.decideExclusion}
-              onNorthChange={edge.setNorth}
-              onExport={edge.markExported}
+    <div className="flex h-dvh flex-col">
+      <header className="flex h-12 shrink-0 items-center gap-3 border-b px-4 text-sm">
+        <Link href="/" className="text-muted-foreground hover:text-foreground">
+          {messages.app}
+        </Link>
+        <span className="text-muted-foreground">/</span>
+        <h1 className="truncate font-medium" data-testid="model-name">
+          {model.name}
+        </h1>
+        {viewableName ? <span className="font-mono text-xs text-muted-foreground">{viewableName}</span> : null}
+        <UnitsChip units={run?.snapshot.units} />
+        <Link href="/" className="ml-auto text-xs text-muted-foreground hover:text-foreground" data-testid="projects-link">
+          {messages.projects}
+        </Link>
+      </header>
+      <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1">
+        <ResizablePanel defaultSize="70%" minSize={320} className="min-w-0">
+          <ProjectViewer urn={model.urn} viewableName={viewableName}>
+            <StageColouring
+              rows={colourOn ? rows : undefined}
+              ghost={colourOn ? edge.contextIds : undefined}
+              onClear={() => setColourOn(false)}
             />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </div>
-    </ViewerBridgeProvider>
+          </ProjectViewer>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={400} minSize={380} maxSize={640} className="min-w-0">
+          <EdgePanel
+            run={run}
+            state={edge.state}
+            error={edge.error}
+            progress={phaseMessage(edge.phase)}
+            origin={edge.origin}
+            elementsOf={edge.elementsOf}
+            colouring={{ on: colourOn && rows !== undefined, onChange: setColourOn }}
+            onCheck={isModelLoaded && project ? edge.check : undefined}
+            onConfirmType={edge.confirmType}
+            onDecideExclusion={edge.decideExclusion}
+            onNorthChange={edge.setNorth}
+            onExport={edge.markExported}
+          />
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
   )
 }
 
@@ -86,16 +123,25 @@ function UnitsChip({ units }: { units?: string }) {
   )
 }
 
-function StageColouring({ rows, onClear }: { rows: OrientationRow[] | undefined; onClear: () => void }) {
+function StageColouring({
+  rows,
+  ghost,
+  onClear,
+}: {
+  rows: OrientationRow[] | undefined
+  ghost: number[] | undefined
+  onClear: () => void
+}) {
   const { viewer, isModelLoaded } = useViewer()
   const active = rows !== undefined && isModelLoaded && viewer !== null
 
   useEffect(() => {
     if (!viewer || !isModelLoaded) return
+    clearTheming(viewer)
+    if (ghost) ghostDbIds(viewer, ghost)
     if (rows) colorByOrientation(viewer, rows)
-    else clearTheming(viewer)
     return () => clearTheming(viewer)
-  }, [viewer, isModelLoaded, rows])
+  }, [viewer, isModelLoaded, rows, ghost])
 
   return active ? <StageLegend onClear={onClear} /> : null
 }

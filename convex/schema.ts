@@ -12,7 +12,9 @@ export default defineSchema({
   runs: defineTable({
     projectId: v.id('projects'),
     ...runFields,
-  }).index('by_projectId_and_computedAt', ['projectId', 'computedAt']),
+  })
+    .index('by_projectId_and_computedAt', ['projectId', 'computedAt'])
+    .index('by_projectId_and_runId', ['projectId', 'runId']),
 
   runElements: defineTable({
     runId: v.id('runs'),

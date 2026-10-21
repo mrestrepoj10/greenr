@@ -90,6 +90,20 @@ export function colorByOrientation(viewer: APSViewer3D, rows: OrientationRow[]):
   return painted
 }
 
+/** Context and massing recede to a dim grey just above the stage, so the measured building reads first. */
+export const GHOST_RGB: [number, number, number] = [0.16, 0.16, 0.17]
+export const GHOST_INTENSITY = 0.92
+
+export function ghostDbIds(viewer: APSViewer3D, dbIds: readonly number[]): number {
+  const model = viewer.model
+  const THREE = window.THREE
+  if (!model || !THREE || dbIds.length === 0) return 0
+  const ghost = new THREE.Vector4(GHOST_RGB[0], GHOST_RGB[1], GHOST_RGB[2], GHOST_INTENSITY)
+  for (const dbId of dbIds) viewer.setThemingColor(dbId, ghost, model, true)
+  viewer.impl.invalidate(true)
+  return dbIds.length
+}
+
 export function clearTheming(viewer: APSViewer3D): void {
   if (viewer.model) viewer.clearThemingColors(viewer.model)
   viewer.impl.invalidate(true)

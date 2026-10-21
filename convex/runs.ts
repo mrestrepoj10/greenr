@@ -32,8 +32,9 @@ async function latestRun(ctx: QueryCtx, projectId: Id<'projects'>) {
     .first()
 }
 
-/** Writes one run plus its element id chunks, and folds the run's classifications and exclusions
- * into the project tables with the same never-overwrite-a-user-decision rules as saveMany and saveProposed. */
+/** Writes one run plus its element id chunks, keyed by the run id, so recomputing after a confirmation replaces the
+ * same document. Folds the run's classifications and exclusions into the project tables with the same
+ * never-overwrite-a-user-decision rules as saveMany and saveProposed. */
 export const save = mutation({
   args: {
     projectId: v.id('projects'),
@@ -46,7 +47,18 @@ export const save = mutation({
   handler: async (ctx, args) => {
     const project = await ctx.db.get(args.projectId)
     if (!project) throw new Error('404: project not found')
-    const runId = await ctx.db.insert('runs', { projectId: args.projectId, ...args.run })
+    const existing = await ctx.db
+      .query('runs')
+      .withIndex('by_projectId_and_runId', (q) => q.eq('projectId', args.projectId).eq('runId', args.run.runId))
+      .unique()
+    let runId: Id<'runs'>
+    if (existing) {
+      runId = existing._id
+      await ctx.db.replace(runId, { projectId: args.projectId, ...args.run })
+      for (const element of await elementsOf(ctx, runId)) await ctx.db.delete(element._id)
+    } else {
+      runId = await ctx.db.insert('runs', { projectId: args.projectId, ...args.run })
+    }
     for (const element of args.elements) {
       await ctx.db.insert('runElements', { runId, ...element })
     }

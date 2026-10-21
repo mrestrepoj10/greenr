@@ -148,7 +148,7 @@ export function fromStoredRun(
     guideVersion: doc.guideVersion,
     snapshot: doc.snapshot,
     classifications: classifications.map(fromClassificationRow),
-    exclusions: exclusions.map(fromExclusionRow),
+    exclusions: exclusions.filter((row) => row.status !== 'rejected').map(fromExclusionRow),
     measures,
     computedAt: doc.computedAt,
   }
