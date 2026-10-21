@@ -1,4 +1,6 @@
 allowBuilds:
+  '@mongodb-js/zstd': false
   esbuild: false
+  node-liblzma: false
   sharp: false
   unrs-resolver: false
