@@ -1,5 +1,4 @@
-import type { Exclusion, InputValue, MeasureBlocker, MeasureCode, RunResult, Scheme, Snapshot } from '@/lib/edge/types'
-import { messages } from '@/lib/ui/messages'
+import type { Exclusion, InputValue, MeasureCode, RunResult, Scheme, Snapshot } from '@/lib/edge/types'
 
 export type SchemeExport = {
   name: string
@@ -127,12 +126,6 @@ export function describeNorth(north: Snapshot['north']): string {
     user: 'North set by the user',
   }[north.source]
   return `${source}, ${north.angleDeg.toFixed(1)} degrees clockwise from the model +Y axis. Orientations are the closest of eight 45 degree sectors.`
-}
-
-export function describeBlocker(blocker: MeasureBlocker): string {
-  return blocker.kind === 'missing-input'
-    ? `needs the project input ${messages.projectInputs.fields[blocker.input].label}`
-    : 'not measured in this version of greenr'
 }
 
 export function describeExclusion(exclusion: Exclusion): string {

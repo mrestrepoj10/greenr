@@ -1,8 +1,8 @@
 import { RULES, reaches, type Threshold } from '../../casa/rules'
-import { blockedOn } from '../../casa/scope'
+import { typeGap } from '../../casa/scope'
 import { GUIDE } from '../../guide'
 import { param, positive } from '../../params'
-import type { Element, Gap, Measure, MeasureFlag } from '../../types'
+import type { Element, Gap, Measure, MeasureBlocker, MeasureFlag } from '../../types'
 import { buildingOf } from '../building'
 import { measureResult } from '../result'
 
@@ -52,12 +52,14 @@ export const C_SRI: Measure = {
     const above = roofs.filter((r) => r.above)
 
     const gaps: Gap[] = []
+    const blockedBy: MeasureBlocker[] = []
     const byType = new Map<string, typeof roofs>()
     for (const r of roofs) byType.set(r.e.typeKey, [...(byType.get(r.e.typeKey) ?? []), r])
     for (const [typeKey, list] of byType) {
       const dbIds = list.map((r) => r.e.dbId)
       if (list.every((r) => r.sri === null)) {
-        gaps.push(blockedOn('C-SRI', 'Solar Reflectance Index', `${typeKey} has no SRI. BEc3 counts a roof only with the manufacturer's SRI.`, typeKey, dbIds))
+        blockedBy.push({ kind: 'missing-parameter', parameter: 'Solar Reflectance Index' })
+        gaps.push(typeGap('C-SRI', 'Solar Reflectance Index', `${typeKey} has no SRI. BEc3 counts a roof only with the manufacturer's SRI.`, typeKey, dbIds))
       }
       if (list.some((r) => r.cls === null)) {
         gaps.push({
@@ -91,6 +93,7 @@ export const C_SRI: Measure = {
       ],
       gaps,
       flags,
+      blockedBy,
       pendingTypeKeys: b.pendingTypeKeys,
       pendingExclusionIds: b.pendingExclusionIds,
     })

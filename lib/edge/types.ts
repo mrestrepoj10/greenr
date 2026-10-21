@@ -134,6 +134,8 @@ export type Element = {
   facade?: FacadeGeometry
   /** Present on rooms. */
   footprint?: Footprint
+  /** Set on a room Revit keeps with no area and no level: removed from plan, or never placed. */
+  unplaced?: true
 }
 
 export type Units = 'ft' | 'm'
@@ -226,8 +228,20 @@ export type ProjectInputs = {
 }
 export type ProjectInputKey = keyof ProjectInputs
 
-/** Why a measure cannot report yet. A blocked measure names what it waits for instead of guessing. */
-export type MeasureBlocker = { kind: 'missing-input'; input: ProjectInputKey } | { kind: 'not-implemented' }
+/** Elements a measure needs that the model does not carry. */
+export const MISSING_ELEMENTS = ['plumbing-fixture', 'interior-partition', 'dwelling-unit', 'habitable-space'] as const
+export type MissingElements = (typeof MISSING_ELEMENTS)[number]
+
+/**
+ * Why a measure cannot report yet. A blocked measure names what it waits for instead of guessing: a project input the
+ * person types, a parameter the model lacks, rooms Revit never placed, elements the model does not have.
+ */
+export type MeasureBlocker =
+  | { kind: 'missing-input'; input: ProjectInputKey }
+  | { kind: 'missing-parameter'; parameter: string }
+  | { kind: 'unplaced-rooms'; count: number; total: number }
+  | { kind: 'missing-elements'; elements: MissingElements }
+  | { kind: 'not-implemented' }
 
 export type Gap = {
   id: string

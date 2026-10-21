@@ -1,6 +1,5 @@
 import { classifySnapshot } from '@/lib/classify'
 import { analyzeEnvelope } from '@/lib/edge/envelope'
-import { isUnplacedRoom } from '@/lib/edge/rooms'
 import type { Element, Snapshot } from '@/lib/edge/types'
 import { installDevHook } from '@/lib/viewer/dev-hook'
 
@@ -43,7 +42,7 @@ function summarize(snapshot: Snapshot) {
     levels: snapshot.levels.length,
     categories: count(snapshot.elements),
     roles: byRole,
-    unplacedRooms: snapshot.elements.filter(isUnplacedRoom).length,
+    unplacedRooms: snapshot.elements.filter((e) => e.unplaced).length,
     finishLayers: env.finishLayers.size,
     windows: hosted('Revit Windows'),
     doors: hosted('Revit Doors'),

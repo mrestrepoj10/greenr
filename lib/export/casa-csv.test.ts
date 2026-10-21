@@ -23,7 +23,7 @@ describe('casa-inputs.csv MS&C block', () => {
     expect(rows[0]).toEqual(['3', 'Tipo de proyecto', 'VIS - Multifamiliar', '', 'project input', 'project input', 'Res. 0194 Anexo 3 (MS&C)', '21'])
     expect(rows[1].slice(1, 3)).toEqual(['Clima', 'Templado'])
     expect(byLabel(rows, 'Relación muro/ventana: fachada Norte').slice(2, 6)).toEqual(['0.00', '%', 'C-ENV', 'blocked'])
-    expect(byLabel(rows, 'Duchas de bajo consumo').slice(2, 6)).toEqual(['0.00', 'L/min', 'C-WATER', 'missing'])
+    expect(byLabel(rows, 'Duchas de bajo consumo').slice(2, 6)).toEqual(['0.00', 'L/min', 'C-WATER', 'blocked'])
     const blank = mscRows({ ...fixtureBothRun, inputs: {} })
     expect(blank[0].slice(2, 6)).toEqual(['', '', 'project input', 'missing'])
   })

@@ -1,10 +1,10 @@
 import { elevationZeroZ } from '../../casa/elevation'
 import { areaWeighted, glazingTypes, uValue, type GlazingType } from '../../casa/glazing'
 import { cardinalRows } from '../../casa/orientation4'
-import { blockedOn, mergePending, pendingFor, roomPlacement, scopeOf, select } from '../../casa/scope'
+import { mergePending, pendingFor, roomPlacement, scopeOf, select, unplacedBlocker } from '../../casa/scope'
 import { GUIDE } from '../../guide'
 import { positive } from '../../params'
-import type { Element, Gap, InputValue, Measure, ValueSource } from '../../types'
+import type { Element, InputValue, Measure, ValueSource } from '../../types'
 import { deriveUnits } from '../../units'
 import { buildingOf } from '../building'
 import { tallyFacade } from '../eem01'
@@ -66,18 +66,7 @@ export const C_ENV: Measure = {
     const b = buildingOf(snapshot, classifications, exclusions)
     const placement = roomPlacement(snapshot)
     const inputs: InputValue[] = []
-    const gaps: Gap[] = []
     const pending: Parameters<typeof mergePending>[0] = []
-
-    if (placement.unplaced) {
-      gaps.push(
-        blockedOn(
-          'C-ENV',
-          'Placed rooms',
-          `${placement.placed} of ${placement.total} rooms are placed, so the room probe cannot tell the outside of a wall from its inside. Façade areas, window-to-wall ratios, footprint and floor counts wait for placed rooms.`,
-        ),
-      )
-    }
     const tally = placement.unplaced ? null : tallyFacade(snapshot, classifications, exclusions)
     const rows = tally ? cardinalRows(snapshot, tally.walls, tally.openings) : undefined
     if (tally && rows) {
@@ -134,7 +123,7 @@ export const C_ENV: Measure = {
 
     return measureResult('C-ENV', {
       inputs,
-      gaps,
+      ...(placement.unplaced ? { blockedBy: [unplacedBlocker(placement)] } : {}),
       ...(rows ? { orientations: rows } : {}),
       ...mergePending(pending),
     })

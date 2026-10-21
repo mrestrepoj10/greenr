@@ -2,10 +2,10 @@ import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb, type RGB } from 'pdf
 import { citation } from '@/lib/edge/guide'
 import { MEASURES } from '@/lib/edge/measures'
 import { schemeOf, type MeasureCode, type MeasureResult, type RunResult } from '@/lib/edge/types'
+import { blockerText } from '@/lib/ui/messages'
 import {
   MEASURE_TITLES,
   SCHEME_EXPORT,
-  describeBlocker,
   describeExclusion,
   describeNorth,
   documentFileName,
@@ -215,7 +215,7 @@ export async function measurePdf(
       ['Scheme', `${strings.name} ${run.guides[scheme]}`],
       ['Serves', MEASURES[code].credits.join(', ')],
       ['Guide', `${citation(measure.guide)}, ${measure.guide.title}`],
-      ['Measure state', measure.blockedBy?.length ? `${measure.state}: ${measure.blockedBy.map(describeBlocker).join('; ')}` : measure.state],
+      ['Measure state', measure.blockedBy?.length ? `${measure.state}. ${measure.blockedBy.map(blockerText).join(' ')}` : measure.state],
     ],
   )
 

@@ -1,6 +1,6 @@
 import { applyExclusions, touching, type AppliedExclusions } from '../exclusions'
 import { pendingOf, roleIndex, type RoleIndex } from '../roles'
-import type { Classification, Element, ElementRole, Exclusion, Gap, MeasureCodeOf, MeasureResult, Snapshot } from '../types'
+import type { Classification, Element, ElementRole, Exclusion, Gap, MeasureBlocker, MeasureCodeOf, MeasureResult, Snapshot } from '../types'
 
 export type Scope = { snapshot: Snapshot; roles: RoleIndex; applied: AppliedExclusions }
 
@@ -46,9 +46,16 @@ export function mergePending(parts: Pending[]): Required<Pending> {
   }
 }
 
-/** `MeasureBlocker` names only project inputs, so a missing model parameter blocks through a gap that names it in plain words. */
-export function blockedOn(code: MeasureCodeOf<'CASA'>, missing: string, message: string, typeKey = '', dbIds: number[] = []): Gap {
-  return { id: `${code}:${typeKey || missing}`, measure: code, typeKey, dbIds, missing, severity: 'blocks-claim', message }
+/** One type that lacks a parameter the measure reads. The measure's `missing-parameter` blocker says whether it blocks. */
+export function typeGap(
+  code: MeasureCodeOf<'CASA'>,
+  missing: string,
+  message: string,
+  typeKey: string,
+  dbIds: number[],
+  severity: Gap['severity'] = 'needs-data-sheet',
+): Gap {
+  return { id: `${code}:${typeKey}`, measure: code, typeKey, dbIds, missing, severity, message }
 }
 
 export type RoomPlacement = { total: number; placed: number; unplaced: boolean }
@@ -61,3 +68,5 @@ export function roomPlacement(snapshot: Snapshot): RoomPlacement {
   const placed = rooms.filter((r) => r.footprint !== undefined && (r.area ?? 0) > 0).length
   return { total: rooms.length, placed, unplaced: placed === 0 || placed < rooms.length * MIN_PLACED_ROOM_SHARE }
 }
+
+export const unplacedBlocker = (p: RoomPlacement): MeasureBlocker => ({ kind: 'unplaced-rooms', count: p.total - p.placed, total: p.total })

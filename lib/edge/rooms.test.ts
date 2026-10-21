@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { isBedroomName, isOutdoorRoomName, isUnplacedRoom, isWetRoomName, UNPLACED_PARAM } from './rooms'
-import type { Element } from './types'
+import { isBedroomName, isOutdoorRoomName, isWetRoomName } from './rooms'
 
 describe('room names', () => {
   test.each(['Habitación', 'Habitacion 2', 'Alcoba principal', 'Dormitorio', 'Cuarto', 'Bedroom 1'])('%s is a bedroom', (name) => {
@@ -23,10 +22,4 @@ describe('room names', () => {
     expect(isOutdoorRoomName(name)).toBe(false)
     expect(isWetRoomName(name)).toBe(false)
   })
-})
-
-test('isUnplacedRoom reads the flag the snapshot reader writes', () => {
-  const room = (params: Element['params']): Element => ({ dbId: 1, typeKey: 'Revit Rooms', category: 'Revit Rooms', params })
-  expect(isUnplacedRoom(room({ [UNPLACED_PARAM]: 1, Name: 'Habitación' }))).toBe(true)
-  expect(isUnplacedRoom(room({ Name: 'Habitación' }))).toBe(false)
 })

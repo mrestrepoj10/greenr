@@ -149,8 +149,10 @@ describe('a run checked for EDGE and CASA', () => {
   test('writes one CSV per scheme; the EDGE file is the one an EDGE-only run writes', () => {
     expect(inputsCsv(fixtureBothRun, 'EDGE')).toBe(inputsCsv(fixtureRun, 'EDGE'))
     const casa = inputsCsv(fixtureBothRun, 'CASA').split('\r\n')
-    expect(casa.slice(0, 4)).toEqual([
+    expect(casa.slice(0, 6)).toEqual([
       'measure,label,value,unit,source,guide_doc,guide_page',
+      'C-ENV,Roof area,412.50,m²,parameter,CASA Colombia,30',
+      'C-WATER,Ducha: MezcladorDucha / Ducha,,L/min,parameter,CASA Colombia,125',
       'C-FLOOD,Lowest habitable floor,2.40,m,rooms,CASA Colombia,68',
       '',
       'msc_field,label,value,unit,measure,source,guide_doc,guide_page',
@@ -188,7 +190,7 @@ describe('a run checked for EDGE and CASA', () => {
     expect(text).toContain('CASA Colombia 3.1 (Edici\u00f3n 2026)')
     expect(text).toContain('CCRp3, CCRc4')
     expect(text).toContain('CASA Colombia, 3.1 (Edici\u00f3n 2026), p. 68')
-    expect(text).toContain('blocked: needs the project input Road grade elevation')
+    expect(text).toContain('blocked. Needs Road grade elevation under Project inputs.')
     expect(text).not.toContain('EDGE App')
   })
 

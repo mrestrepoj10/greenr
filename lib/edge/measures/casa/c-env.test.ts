@@ -50,9 +50,10 @@ describe('C-ENV with unplaced rooms', () => {
   }
   const r = C_ENV.compute(unplaced, [...classifications, ...classify({ 'Basic Roof / R': 'roof' })], [], {})
 
-  test('blocks on placed rooms and withholds the façade, footprint and floor counts', () => {
+  test('blocks on unplaced rooms, counted, and withholds the façade, footprint and floor counts', () => {
     expect(r.state).toBe('blocked')
-    expect(r.gaps.map((g) => [g.missing, g.severity])).toEqual([['Placed rooms', 'blocks-claim']])
+    expect(r.blockedBy).toEqual([{ kind: 'unplaced-rooms', count: 4, total: 4 }])
+    expect(r.gaps).toEqual([])
     expect(r.orientations).toBeUndefined()
     for (const label of [L.gross, L.wwr, L.footprint, L.floorsAbove]) expect(value(r, label)).toBeUndefined()
   })

@@ -90,7 +90,7 @@ describe('check tools on an EDGE and CASA run', () => {
   it('read one CASA measure by its code', async () => {
     const { session } = fakeSession(fixtureBothRun)
     const result = await createAgentTools(edgeToolSpecs(session)).get('check_measure')!.run({ code: 'C-ENV' }, { signal })
-    expect(JSON.parse(result.text)).toMatchObject({ code: 'C-ENV', blockedBy: [{ kind: 'not-implemented' }] })
+    expect(JSON.parse(result.text)).toMatchObject({ code: 'C-ENV', blockedBy: [{ kind: 'unplaced-rooms', count: 73, total: 73 }] })
     expect(result.detail).toBe('CASA Colombia, 3.1 (Edición 2026), p. 30')
   })
 

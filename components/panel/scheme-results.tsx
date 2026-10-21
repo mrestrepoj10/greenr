@@ -9,8 +9,8 @@ import { MeasureSection } from '@/components/panel/measure-section'
 import { WwrTable } from '@/components/panel/wwr-table'
 import { Button } from '@/components/ui/button'
 import { MEASURES } from '@/lib/edge/measures'
-import { isCodeOf, schemeOf, type MeasureBlocker, type MeasureCode, type MeasureResult, type RunResult, type Scheme } from '@/lib/edge/types'
-import { messages } from '@/lib/ui/messages'
+import { isCodeOf, schemeOf, type MeasureCode, type MeasureResult, type RunResult, type Scheme } from '@/lib/edge/types'
+import { blockerText, messages } from '@/lib/ui/messages'
 
 const DESIGN_INPUT_CODES: readonly MeasureCode[] = ['D-GIA', 'D-FLOORS', 'D-F2F', 'D-ROOF', 'AU-SKYLIGHT']
 
@@ -65,12 +65,6 @@ function EdgeResults({ run, measures, selectedKey, onSelect, colouring, onNorthC
   )
 }
 
-function blockerText(blocker: MeasureBlocker): string {
-  return blocker.kind === 'missing-input'
-    ? messages.blocked.missingInput(messages.projectInputs.fields[blocker.input].label)
-    : messages.blocked.notImplemented
-}
-
 function CasaResults({ measures, selectedKey, onSelect }: SchemeResultsProps) {
   return (
     <>
@@ -89,7 +83,7 @@ function CasaResults({ measures, selectedKey, onSelect }: SchemeResultsProps) {
             {m.blockedBy?.length ? (
               <ul className="flex flex-col gap-1 text-xs text-muted-foreground" data-testid="measure-blocked">
                 {m.blockedBy.map((blocker) => (
-                  <li key={blocker.kind === 'missing-input' ? blocker.input : blocker.kind}>{blockerText(blocker)}</li>
+                  <li key={JSON.stringify(blocker)}>{blockerText(blocker)}</li>
                 ))}
               </ul>
             ) : null}

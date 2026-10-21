@@ -5,7 +5,7 @@ import { classifySnapshot } from '@/lib/classify'
 import { analyzeEnvelope } from './envelope'
 import { missingGlazingData } from './measures/eem09'
 import { positive } from './params'
-import { isBedroomName, isOutdoorRoomName, isUnplacedRoom, isWetRoomName, roomName } from './rooms'
+import { isBedroomName, isOutdoorRoomName, isWetRoomName, roomName } from './rooms'
 import type { Element, Snapshot } from './types'
 
 /** Captured by `CAPTURE=1 node scripts/verify/c2-snapshot.mjs`, gzipped because the JSON is 22 MB. */
@@ -25,7 +25,7 @@ describe('TORRE A ARQ v20 snapshot', () => {
 
   test('all 73 rooms are unplaced and flagged, so a measure can say so instead of reporting zeros', () => {
     expect(rooms).toHaveLength(73)
-    expect(rooms.filter(isUnplacedRoom)).toHaveLength(73)
+    expect(rooms.filter((r) => r.unplaced)).toHaveLength(73)
   })
 
   test('room names: 31 bedrooms, 17 wet rooms, 3 balconies', () => {

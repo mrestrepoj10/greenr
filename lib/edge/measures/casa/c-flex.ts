@@ -1,9 +1,9 @@
 import { isHabitableName } from '../../casa/room-names'
 import { RULES, reaches } from '../../casa/rules'
-import { blockedOn, mergePending, pendingFor, scopeOf, select } from '../../casa/scope'
+import { mergePending, pendingFor, scopeOf, select, typeGap } from '../../casa/scope'
 import { GUIDE } from '../../guide'
 import { param, text } from '../../params'
-import type { Element, Gap, InputValue, Measure, MeasureFlag, Snapshot, ValueSource } from '../../types'
+import type { Element, Gap, InputValue, Measure, MeasureBlocker, MeasureFlag, Snapshot, ValueSource } from '../../types'
 import { deriveUnits, type Unit } from '../../units'
 import { buildingOf, type Building } from '../building'
 import { measureResult } from '../result'
@@ -82,16 +82,17 @@ export const C_FLEX: Measure = {
     const share = known > 0 ? area(by['non-structural']) / known : null
 
     const gaps: Gap[] = []
+    const blockedBy: MeasureBlocker[] = []
     const flags: MeasureFlag[] = []
-    if (partitions.length === 0) {
-      gaps.push(blockedOn('C-FLEX', 'Interior partitions', 'No wall at least 3 cm thick is classified interior-wall, so there is no partition area to split.'))
-    }
+    if (partitions.length === 0) blockedBy.push({ kind: 'missing-elements', elements: 'interior-partition' })
+    const bearing = 'Structural or Structural Usage'
     const unknownTypes = new Map<string, number[]>()
     for (const w of by.unknown) unknownTypes.set(w.typeKey, [...(unknownTypes.get(w.typeKey) ?? []), w.dbId])
     for (const [typeKey, dbIds] of unknownTypes) {
-      const gap = blockedOn('C-FLEX', 'Structural or Structural Usage', `${typeKey} has neither Structural nor Structural Usage, so its ${dbIds.length} walls are left out of the share.`, typeKey, dbIds)
-      gaps.push(known > 0 ? { ...gap, severity: 'info' } : gap)
+      const message = `${typeKey} has neither Structural nor Structural Usage, so its ${dbIds.length} walls are left out of the share.`
+      gaps.push(typeGap('C-FLEX', bearing, message, typeKey, dbIds, known > 0 ? 'info' : 'needs-data-sheet'))
     }
+    if (unknownTypes.size > 0 && known === 0) blockedBy.push({ kind: 'missing-parameter', parameter: bearing })
     if (share !== null && !reaches(RULES.nonStructuralShare, share)) {
       flags.push({ id: 'C-FLEX:share', level: 'flag', threshold: RULES.nonStructuralShare.value, message: 'Non-structural partitions are 50% of partition wall area or less.', guide: RULES.nonStructuralShare.guide })
     }
@@ -99,9 +100,7 @@ export const C_FLEX: Measure = {
     const b = buildingOf(snapshot, classifications, exclusions)
     const { spaces, source } = slabHeights(snapshot, b, deriveUnits(snapshot))
     const under = spaces.filter((s) => !reaches(RULES.slabToSlabM, s.heightM))
-    if (spaces.length === 0) {
-      gaps.push(blockedOn('C-FLEX', 'Placed rooms or dwelling units', 'No dwelling room found a slab above it and no two levels carry dwelling units, so the height between slabs is not measured.'))
-    }
+    if (spaces.length === 0) blockedBy.push({ kind: 'missing-elements', elements: 'habitable-space' })
     if (under.length) {
       flags.push({ id: 'C-FLEX:height', level: 'flag', threshold: RULES.slabToSlabM.value, message: `${under.length} of ${spaces.length} dwelling spaces are under 2.40 m slab to slab.`, guide: RULES.slabToSlabM.guide })
     }
@@ -118,6 +117,6 @@ export const C_FLEX: Measure = {
       { label: L.below, value: under.length, unit: 'spaces', source, dbIds: under.flatMap((s) => s.dbIds) },
     ]
     const slabs = source === 'rooms' ? [{ pendingTypeKeys: b.pendingTypeKeys, pendingExclusionIds: b.pendingExclusionIds }] : []
-    return measureResult('C-FLEX', { inputs, gaps, flags, ...mergePending([pendingFor(scope, walls.involved), ...slabs]) })
+    return measureResult('C-FLEX', { inputs, gaps, flags, blockedBy, ...mergePending([pendingFor(scope, walls.involved), ...slabs]) })
   },
 }

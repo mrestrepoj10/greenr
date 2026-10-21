@@ -1,8 +1,8 @@
 import { fixtureKindOf, NTC_1500, NTC_1500_GUIDE, type FixtureKind } from '../../casa/ntc1500'
-import { blockedOn, pendingFor, scopeOf, select } from '../../casa/scope'
+import { pendingFor, scopeOf, select, typeGap } from '../../casa/scope'
 import { GUIDE } from '../../guide'
 import { positive } from '../../params'
-import type { Element, Gap, InputValue, Measure, MeasureFlag } from '../../types'
+import type { Element, Gap, InputValue, Measure, MeasureBlocker, MeasureFlag } from '../../types'
 import { deriveUnits, occupantsOf } from '../../units'
 import { measureResult } from '../result'
 
@@ -32,11 +32,10 @@ export const C_WATER: Measure = {
 
     const inputs: InputValue[] = [{ label: C_WATER_LABELS.fixtures, value: fixtures.used.length, unit: 'fixtures', source: 'parameter', dbIds: fixtures.used.map((f) => f.dbId) }]
     const gaps: Gap[] = []
+    const blockedBy: MeasureBlocker[] = []
     const highest = new Map<FixtureKind, { value: number; dbIds: number[] }>()
     const over = new Map<FixtureKind, string[]>()
-    if (fixtures.used.length === 0) {
-      gaps.push(blockedOn('C-WATER', 'Plumbing fixtures', 'No plumbing fixture in the model. Ap3 checks every fixture against NTC 1500, so the plumbing model has to be read too.'))
-    }
+    if (fixtures.used.length === 0) blockedBy.push({ kind: 'missing-elements', elements: 'plumbing-fixture' })
 
     for (const [typeKey, list] of [...byType].sort((a, b) => a[0].localeCompare(b[0]))) {
       const dbIds = list.map((f) => f.dbId)
@@ -58,11 +57,13 @@ export const C_WATER: Measure = {
       inputs.push({ label: `${cap.label}: ${typeKey}`, value, unit: cap.unit, source: 'parameter', dbIds })
       if (value === null) {
         const pressure = cap.testPsi ? ` at ${cap.testPsi} psi` : ''
+        const parameter = cap.params.join(' or ')
+        blockedBy.push({ kind: 'missing-parameter', parameter })
         gaps.push(
-          blockedOn(
+          typeGap(
             'C-WATER',
-            cap.params.join(' or '),
-            `${list.length} × ${typeKey} (${cap.label}) carry no ${cap.params.join(' or ')}. Ap3 needs each fixture's ${cap.unit}${pressure} from its data sheet.`,
+            parameter,
+            `${list.length} × ${typeKey} (${cap.label}) carry no ${parameter}. Ap3 needs each fixture's ${cap.unit}${pressure} from its data sheet.`,
             typeKey,
             dbIds,
           ),
@@ -113,6 +114,6 @@ export const C_WATER: Measure = {
       guide: NTC_1500_GUIDE,
     }))
 
-    return measureResult('C-WATER', { inputs, gaps, flags, ...pendingFor(scope, fixtures.involved) })
+    return measureResult('C-WATER', { inputs, gaps, flags, blockedBy, ...pendingFor(scope, fixtures.involved) })
   },
 }

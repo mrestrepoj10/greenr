@@ -1,11 +1,11 @@
 import { GLAZED_DOOR, OPENING_FACTORS, openingAreaM2, operableShare, roomBehind } from '../../casa/openings'
 import { isHabitableName } from '../../casa/room-names'
 import { RULES, reaches } from '../../casa/rules'
-import { blockedOn, pendingFor, roomPlacement, scopeOf, select } from '../../casa/scope'
+import { pendingFor, roomPlacement, scopeOf, select, typeGap, unplacedBlocker } from '../../casa/scope'
 import { GUIDE } from '../../guide'
 import { text } from '../../params'
 import { roomIndexOf } from '../../rooms'
-import type { Element, Gap, InputValue, Measure, MeasureFlag } from '../../types'
+import type { Element, Gap, InputValue, Measure, MeasureBlocker, MeasureFlag } from '../../types'
 import { deriveUnits } from '../../units'
 import { tallyFacade } from '../eem01'
 import { measureResult } from '../result'
@@ -34,7 +34,7 @@ function operableGaps(windows: Element[]): Gap[] {
     const message = share
       ? `${typeKey} has no Operable parameter. Its opening uses greenr's assumed share for a ${factor!.label} window, ${share.share}, until the type carries Operable.`
       : `${typeKey} has no Operable parameter and its name does not say how it opens, so it adds no useful opening.`
-    return [blockedOn('C-VENT', 'Operable', message, typeKey, list.map((w) => w.dbId))]
+    return [typeGap('C-VENT', 'Operable', message, typeKey, list.map((w) => w.dbId))]
   })
 }
 
@@ -56,16 +56,11 @@ export const C_VENT: Measure = {
     const inputs: InputValue[] = []
     const flags: MeasureFlag[] = []
     const gaps = operableGaps(windows.used)
+    const blockedBy: MeasureBlocker[] = gaps.length ? [{ kind: 'missing-parameter', parameter: 'Operable' }] : []
     const placement = roomPlacement(snapshot)
 
     if (placement.unplaced) {
-      gaps.push(
-        blockedOn(
-          'C-VENT',
-          'Placed rooms',
-          `${placement.placed} of ${placement.total} rooms are placed, so no window can be matched to the room it ventilates. SBp1 shares per room wait for placed rooms.`,
-        ),
-      )
+      blockedBy.push(unplacedBlocker(placement))
     } else {
       const index = roomIndexOf(snapshot)
       const unitRooms = new Set(units.flatMap((u) => u.roomDbIds))
@@ -109,13 +104,7 @@ export const C_VENT: Measure = {
     }
 
     if (units.length === 0) {
-      gaps.push(
-        blockedOn(
-          'C-VENT',
-          'Dwelling units',
-          'No dwelling unit found by Comments "Tipo N", a room Number prefix, Department or Revit Areas, so SBc6 glazing per unit cannot be summed.',
-        ),
-      )
+      blockedBy.push({ kind: 'missing-elements', elements: 'dwelling-unit' })
     } else {
       const used = new Map([...windows.used, ...doors.used.filter((d) => GLAZED_DOOR.test(d.typeKey))].map((e) => [e.dbId, e]))
       const shares = units.map((u) => {
@@ -143,6 +132,6 @@ export const C_VENT: Measure = {
       }
     }
 
-    return measureResult('C-VENT', { inputs, gaps, flags, ...pendingFor(scope, [...windows.involved, ...doors.involved]) })
+    return measureResult('C-VENT', { inputs, gaps, flags, blockedBy, ...pendingFor(scope, [...windows.involved, ...doors.involved]) })
   },
 }

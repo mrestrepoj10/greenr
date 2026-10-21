@@ -2,7 +2,9 @@ import type {
   ElementRole,
   ExclusionReason,
   ExclusionStatus,
+  MeasureBlocker,
   MeasureCodeOf,
+  MissingElements,
   ProjectInputKey,
   RunState,
   Scheme,
@@ -115,8 +117,18 @@ export const messages = {
     } satisfies Record<MeasureCodeOf<'CASA'>, string>,
   },
   blocked: {
+    label: 'Blocked',
     notImplemented: 'Not measured yet. This CASA measure arrives in a later version of greenr.',
     missingInput: (label: string) => `Needs ${label} under Project inputs.`,
+    missingParameter: (parameter: string) => `Needs ${parameter} on the element types listed below, from their data sheets.`,
+    unplacedRooms: (count: number, total: number) =>
+      `${count} of ${total} rooms are unplaced in this model, so the envelope cannot be probed.`,
+    missingElements: {
+      'plumbing-fixture': 'No plumbing fixture in this model. Open the plumbing model and check it for CASA.',
+      'interior-partition': 'No wall 3 cm or thicker is classified as an interior wall, so there is no partition area to split.',
+      'dwelling-unit': 'No dwelling unit found by Comments "Tipo N", a room Number prefix, Department or Revit Areas.',
+      'habitable-space': 'No placed habitable room and no dwelling unit, so the habitable floors cannot be found.',
+    } satisfies Record<MissingElements, string>,
   },
   credits: 'Serves',
   projectInputs: {
@@ -255,3 +267,19 @@ export const messages = {
       `${n} ${n === 1 ? 'type' : 'types'} could not be classified automatically. Confirm ${n === 1 ? 'it' : 'them'} under Needs your confirmation.`,
   },
 } as const
+
+/** One sentence per blocker, the same in the panel, the PDFs and the agent's tools. */
+export function blockerText(blocker: MeasureBlocker): string {
+  switch (blocker.kind) {
+    case 'missing-input':
+      return messages.blocked.missingInput(messages.projectInputs.fields[blocker.input].label)
+    case 'missing-parameter':
+      return messages.blocked.missingParameter(blocker.parameter)
+    case 'unplaced-rooms':
+      return messages.blocked.unplacedRooms(blocker.count, blocker.total)
+    case 'missing-elements':
+      return messages.blocked.missingElements[blocker.elements]
+    case 'not-implemented':
+      return messages.blocked.notImplemented
+  }
+}

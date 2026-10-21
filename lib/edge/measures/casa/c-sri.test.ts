@@ -35,8 +35,9 @@ describe('C-SRI', () => {
 
   test('a roof type without SRI blocks the claim; one without Slope asks for it', () => {
     expect(r.state).toBe('blocked')
+    expect(r.blockedBy).toEqual([{ kind: 'missing-parameter', parameter: 'Solar Reflectance Index' }])
     expect(r.gaps.map((g) => [g.typeKey, g.missing, g.severity])).toEqual([
-      ['Cubierta / Sin datos', 'Solar Reflectance Index', 'blocks-claim'],
+      ['Cubierta / Sin datos', 'Solar Reflectance Index', 'needs-data-sheet'],
       ['Cubierta / Sin datos', 'Slope', 'needs-data-sheet'],
     ])
     const none = C_SRI.compute(snapshotOf([roofs[4]], []), cls, [], {})

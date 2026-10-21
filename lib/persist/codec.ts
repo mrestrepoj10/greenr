@@ -83,6 +83,8 @@ export function toStoredRun(run: RunResult): StoredRunBundle {
       ...(orientations === undefined ? {} : { orientations }),
       gaps,
       pendingTypeKeys: m.pendingTypeKeys,
+      ...(m.pendingExclusionIds === undefined ? {} : { pendingExclusionIds: m.pendingExclusionIds }),
+      ...(m.flags === undefined ? {} : { flags: m.flags }),
     }
   })
   return {
@@ -143,6 +145,8 @@ export function fromStoredRun(
         }),
     gaps: m.gaps.map((g) => ({ ...g, dbIds: idsFor(gapKey(g.id)) })),
     pendingTypeKeys: m.pendingTypeKeys,
+    ...(m.pendingExclusionIds === undefined ? {} : { pendingExclusionIds: m.pendingExclusionIds }),
+    ...(m.flags === undefined ? {} : { flags: m.flags }),
   }))
   return {
     runId: doc.runId,

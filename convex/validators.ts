@@ -122,8 +122,22 @@ export const projectInputKey = literals([
 
 export const measureBlocker = v.union(
   v.object({ kind: v.literal('missing-input'), input: projectInputKey }),
+  v.object({ kind: v.literal('missing-parameter'), parameter: v.string() }),
+  v.object({ kind: v.literal('unplaced-rooms'), count: v.number(), total: v.number() }),
+  v.object({
+    kind: v.literal('missing-elements'),
+    elements: literals(['plumbing-fixture', 'interior-partition', 'dwelling-unit', 'habitable-space'] as const),
+  }),
   v.object({ kind: v.literal('not-implemented') }),
 )
+
+export const measureFlag = v.object({
+  id: v.string(),
+  level: literals(['flag', 'mandatory'] as const),
+  threshold: v.number(),
+  message: v.string(),
+  guide: guideRef,
+})
 
 export const inputValue = v.object({
   label: v.string(),
@@ -160,6 +174,8 @@ export const storedMeasure = v.object({
   orientations: v.optional(v.array(storedOrientationRow)),
   gaps: v.array(storedGap),
   pendingTypeKeys: v.array(v.string()),
+  pendingExclusionIds: v.optional(v.array(v.string())),
+  flags: v.optional(v.array(measureFlag)),
 })
 
 export const runSnapshot = v.object({

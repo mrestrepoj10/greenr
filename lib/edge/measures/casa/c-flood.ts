@@ -1,7 +1,7 @@
 import { elevationZeroZ } from '../../casa/elevation'
 import { isHabitableName } from '../../casa/room-names'
 import { RULES, reaches } from '../../casa/rules'
-import { blockedOn, pendingFor, scopeOf, select } from '../../casa/scope'
+import { pendingFor, scopeOf, select } from '../../casa/scope'
 import { GUIDE } from '../../guide'
 import { text } from '../../params'
 import { roomIndexOf } from '../../rooms'
@@ -37,7 +37,6 @@ function habitableSpaces(snapshot: Snapshot, removed: ReadonlySet<number>, zeroZ
   return { spaces, source: 'levels' }
 }
 
-
 export const C_FLOOD: Measure = {
   scheme: 'CASA',
   code: 'C-FLOOD',
@@ -58,15 +57,7 @@ export const C_FLOOD: Measure = {
     const gaps: Gap[] = []
     const out: InputValue[] = [{ label: L.spaces, value: spaces.length, unit: 'spaces', source, dbIds: ids(spaces) }]
 
-    if (spaces.length === 0) {
-      gaps.push(
-        blockedOn(
-          'C-FLOOD',
-          'Placed rooms or dwelling units',
-          'No placed habitable room and no dwelling unit, so the habitable floors cannot be found. Place the rooms, or tag the unit floors with Comments "Tipo N".',
-        ),
-      )
-    }
+    if (spaces.length === 0) blockedBy.push({ kind: 'missing-elements', elements: 'habitable-space' })
     const lowestZ = spaces.length ? Math.min(...spaces.map((s) => s.z)) : null
     if (lowestZ !== null) out.push({ label: L.lowest, value: survey(lowestZ), unit: 'm', source, dbIds: ids(spaces.filter((s) => s.z === lowestZ)) })
 

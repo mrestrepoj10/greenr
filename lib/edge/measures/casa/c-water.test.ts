@@ -38,20 +38,22 @@ describe('C-WATER', () => {
     expect(r.gaps.map((g) => [g.typeKey, g.missing, g.severity])).toEqual([['Sifón / 2"', 'Fixture kind', 'info']])
   })
 
-  test('fixtures with no flow parameter block the claim, one gap per type naming the parameter', () => {
+  test('fixtures with no flow parameter block the claim once, with one gap per type naming the parameter', () => {
     const mixers = Array.from({ length: 3 }, () => fixture('MezcladorDucha / Ducha', { WFU: 0 }))
-    const r = C_WATER.compute(snapshotOf(mixers, []), cls, [], {})
+    const r = C_WATER.compute(snapshotOf([...mixers, fixture('Lavamanos / Sobreponer')], []), cls, [], {})
     expect(r.state).toBe('blocked')
-    const blocking = r.gaps.filter((g) => g.severity === 'blocks-claim')
-    expect(blocking.map((g) => [g.typeKey, g.missing, g.dbIds])).toEqual([['MezcladorDucha / Ducha', 'Flow or Flow Rate', mixers.map((m) => m.dbId)]])
-    expect(blocking[0].message).toContain('at 80 psi')
+    expect(r.blockedBy).toEqual([{ kind: 'missing-parameter', parameter: 'Flow or Flow Rate' }])
+    const shower = r.gaps.find((g) => g.typeKey === 'MezcladorDucha / Ducha')!
+    expect([shower.missing, shower.severity, shower.dbIds]).toEqual(['Flow or Flow Rate', 'needs-data-sheet', mixers.map((m) => m.dbId)])
+    expect(shower.message).toContain('at 80 psi')
+    expect(value(r, 'Ducha: MezcladorDucha / Ducha')).toBeNull()
     expect(value(r, highestLabel('shower'))).toBeUndefined()
   })
 
   test('a model without plumbing fixtures is blocked, not reported as compliant', () => {
     const r = C_WATER.compute(snapshotOf([], []), cls, [], {})
     expect(r.state).toBe('blocked')
-    expect(r.gaps[0]).toMatchObject({ missing: 'Plumbing fixtures', severity: 'blocks-claim' })
+    expect(r.blockedBy).toEqual([{ kind: 'missing-elements', elements: 'plumbing-fixture' }])
   })
 
   test('a flow under 1 L/min is questioned as a likely L/s reading', () => {

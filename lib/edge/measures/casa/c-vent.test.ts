@@ -49,13 +49,14 @@ describe('C-VENT', () => {
     expect(r.flags?.find((f) => f.id === 'C-VENT:rooms')).toMatchObject({ threshold: 0.04, guide: { page: '172' } })
   })
 
-  test('a window without Operable blocks the claim; the family-name share is labelled an assumption', () => {
+  test('a window without Operable blocks the claim once; each type lacking it is a gap, the family-name share labelled an assumption', () => {
     const t = flat()
     const r = C_VENT.compute(t.snapshot, t.classifications, [], {})
     expect(r.state).toBe('blocked')
+    expect(r.blockedBy).toEqual([{ kind: 'missing-parameter', parameter: 'Operable' }])
     expect(r.gaps.map((g) => [g.typeKey, g.missing, g.severity])).toEqual([
-      ['Ventana corrediza de dos hojas / 1.0 x 1.2', 'Operable', 'blocks-claim'],
-      ['Ventana / Generic', 'Operable', 'blocks-claim'],
+      ['Ventana corrediza de dos hojas / 1.0 x 1.2', 'Operable', 'needs-data-sheet'],
+      ['Ventana / Generic', 'Operable', 'needs-data-sheet'],
     ])
     expect(r.gaps[0].message).toContain('assumed share')
     expect(r.gaps[0].dbIds).toEqual([t.slider.dbId])
@@ -84,7 +85,10 @@ describe('C-VENT', () => {
     const ghost = element('Revit Rooms', 'Room / Room', { area: 0, params: { Name: 'Habitación' } })
     const cls = classify({ 'Ventana corrediza de dos hojas / 1.5 x 1.2': 'window', 'Puerta corrediza con dos hojas / 2.0 x 2.2': 'door' })
     const r = C_VENT.compute(snapshotOf([floor, w(), w(), door, ghost], [{ name: 'Nivel 5', elevation: 22.69 }]), cls, [], {})
-    expect(r.gaps.map((g) => g.missing)).toEqual(['Operable', 'Placed rooms'])
+    expect(r.blockedBy).toEqual([
+      { kind: 'missing-parameter', parameter: 'Operable' },
+      { kind: 'unplaced-rooms', count: 1, total: 1 },
+    ])
     expect(value(r, L.rooms)).toBeUndefined()
     expect(value(r, L.unitRule)).toBe('comments-tipo')
     expect(value(r, 'Unit Nivel 5 Tipo 1: glazing share of floor area')).toBeCloseTo((1.8 + 1.8 + 4.4) / 30, 9)
@@ -93,6 +97,6 @@ describe('C-VENT', () => {
   test('an office model has no dwelling units and says so', () => {
     const { snapshot, classifications } = box()
     const r = C_VENT.compute(snapshot, classifications, [], {})
-    expect(r.gaps.find((g) => g.missing === 'Dwelling units')?.severity).toBe('blocks-claim')
+    expect(r.blockedBy).toContainEqual({ kind: 'missing-elements', elements: 'dwelling-unit' })
   })
 })

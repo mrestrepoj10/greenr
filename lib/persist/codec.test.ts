@@ -12,6 +12,19 @@ describe('run codec', () => {
     expect(rebuilt).toEqual(run)
   })
 
+  it('stores every blocker kind, the flags and the pending exclusions of a CASA measure', () => {
+    const { run } = toStoredRun(fixtureBothRun)
+    const water = run.measures.find((m) => m.code === 'C-WATER')!
+    expect(water.blockedBy).toEqual([
+      { kind: 'missing-parameter', parameter: 'Flow or Flow Rate' },
+      { kind: 'missing-elements', elements: 'dwelling-unit' },
+    ])
+    expect(water.flags?.map((f) => [f.id, f.threshold, f.guide.page])).toEqual([['C-WATER:lavatory', 8.3, '125']])
+    const env = run.measures.find((m) => m.code === 'C-ENV')!
+    expect(env.blockedBy).toEqual([{ kind: 'unplaced-rooms', count: 73, total: 73 }])
+    expect(env.pendingExclusionIds).toEqual(['excl-p1'])
+  })
+
   it('stores the schemes, the guide versions, the project inputs and why a measure is blocked', () => {
     const { run } = toStoredRun(fixtureBothRun)
     expect(run.schemes).toEqual(['EDGE', 'CASA'])

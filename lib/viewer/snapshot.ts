@@ -1,6 +1,5 @@
 import { SRI_PARAMS } from '@/lib/edge/measures/eem02'
 import { GLAZING_PARAMS } from '@/lib/edge/measures/eem09'
-import { UNPLACED_PARAM } from '@/lib/edge/rooms'
 import type { Element, FacadeKind, Level, Snapshot, Units } from '@/lib/edge/types'
 import { createGeometryReader, facadeOf, footprintOf, type ViewerModelGeometry } from './geometry'
 
@@ -292,13 +291,13 @@ function toElement(
   const typeName = row.typed ? (str(p['Type Name']) ?? family) : undefined
   const params: Element['params'] = {}
   for (const name of KEPT_PARAMS) if (p[name] !== undefined) params[name] = p[name]
-  if (role === 'room' && isUnplaced(row)) params[UNPLACED_PARAM] = 1
   const element: Element = {
     dbId: row.dbId,
     typeKey: row.typed ? `${family} / ${typeName}` : row.category,
     category: row.category,
     params,
   }
+  if (role === 'room' && isUnplaced(row)) element.unplaced = true
   if (family !== undefined) element.family = family
   if (typeName !== undefined) element.typeName = typeName
   const level = str(p.Level) ?? str(p['Base Constraint'])

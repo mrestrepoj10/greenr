@@ -56,7 +56,8 @@ describe('C-FLEX', () => {
   test('partitions with no Structural parameter at all block the claim', () => {
     const blind = C_FLEX.compute(snapshotOf([wall('Basic Wall / Drywall', 0.12, 10), ...tipoFloors()], tipoLevels), cls, [], {})
     expect(blind.state).toBe('blocked')
-    expect(blind.gaps.map((g) => [g.missing, g.severity])).toEqual([['Structural or Structural Usage', 'blocks-claim']])
+    expect(blind.blockedBy).toEqual([{ kind: 'missing-parameter', parameter: 'Structural or Structural Usage' }])
+    expect(blind.gaps.map((g) => [g.missing, g.severity])).toEqual([['Structural or Structural Usage', 'needs-data-sheet']])
     expect(value(blind, L.share)).toBeNull()
   })
 
