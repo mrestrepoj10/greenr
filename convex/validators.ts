@@ -23,6 +23,13 @@ export const elementRole = literals([
   'floor',
   'room',
   'shading',
+  'plumbing-fixture',
+  'lighting-fixture',
+  'equipment',
+  'parking',
+  'planting',
+  'area',
+  'pipe',
   'other',
 ] as const)
 

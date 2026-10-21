@@ -39,6 +39,13 @@ export const ROLE_CRITERIA: Record<ElementRole, string> = {
   floor: 'A floor slab',
   room: 'A room or space',
   shading: 'An external shading device: overhang, fin, louvre, brise soleil or its support',
+  'plumbing-fixture': 'A plumbing fixture: faucet, shower, water closet, urinal, bidet, sink or mixer',
+  'lighting-fixture': 'A lighting fixture or luminaire',
+  equipment: 'Mechanical, electrical or specialty equipment: heater, chiller, fan, meter, appliance',
+  parking: 'A parking space, bike rack or vehicle component',
+  planting: 'Planting, trees or landscaped ground',
+  area: 'A Revit Area element or area scheme boundary',
+  pipe: 'A pipe, duct or piping system',
   other: 'None of the above',
 }
 

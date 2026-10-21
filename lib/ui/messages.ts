@@ -222,6 +222,13 @@ export const messages = {
     floor: 'Floor',
     room: 'Room',
     shading: 'Shading',
+    'plumbing-fixture': 'Plumbing fixture',
+    'lighting-fixture': 'Lighting fixture',
+    equipment: 'Equipment',
+    parking: 'Parking',
+    planting: 'Planting',
+    area: 'Area',
+    pipe: 'Pipe',
     other: 'Other',
   } satisfies Record<ElementRole, string>,
   exclusionReasons: {
