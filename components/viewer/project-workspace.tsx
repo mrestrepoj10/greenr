@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
+import { EdgeAgentSection } from '@/components/agent/edge-agent'
 import { EdgePanel } from '@/components/panel/edge-panel'
 import { phaseMessage, useEdgeRun } from '@/components/panel/use-edge-run'
 import { useExportPack } from '@/components/panel/use-export-pack'
@@ -107,6 +108,7 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
             onDecideExclusion={edge.decideExclusion}
             onNorthChange={edge.setNorth}
             onExport={pack.busy ? undefined : pack.exportPack}
+            assistant={<EdgeAgentSection edge={edge} getViewer={getViewer} slug={model.slug} />}
           />
         </ResizablePanel>
       </ResizablePanelGroup>

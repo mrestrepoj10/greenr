@@ -16,7 +16,16 @@ import {
   type RunDocId,
 } from '@/lib/persist/hooks'
 import { classifyRemote } from '@/lib/run/classify-remote'
-import { runPipeline, withConfirmedType, withDecision, type PipelinePhase } from '@/lib/run/pipeline'
+import { agentExclusionId } from '@/lib/agent/edge-tools'
+import type { ExclusionReason } from '@/lib/edge/types'
+import {
+  runPipeline,
+  withConfirmedType,
+  withDecision,
+  withProposedExclusion,
+  withProposedType,
+  type PipelinePhase,
+} from '@/lib/run/pipeline'
 import { messages } from '@/lib/ui/messages'
 import { readSnapshot } from '@/lib/viewer/snapshot'
 import type { APSViewer3D } from '@/lib/viewer-types'
@@ -217,6 +226,27 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
     [decideExclusionRow, recompute],
   )
 
+  const proposeExclusion = useCallback(
+    async ({ dbIds, reason, note }: { dbIds: number[]; reason: ExclusionReason; note: string }) => {
+      const exclusion = { id: agentExclusionId(reason, dbIds), dbIds, reason, source: 'agent' as const, confirmed: false, note }
+      const next = await recompute((r) => ({
+        classifications: r.classifications,
+        exclusions: withProposedExclusion(r.exclusions, exclusion),
+      }))
+      return next?.exclusions.find((e) => e.id === exclusion.id) ?? null
+    },
+    [recompute],
+  )
+
+  const proposeClassification = useCallback(
+    async (typeKey: string, role: ElementRole, reason: string) =>
+      (await recompute((r) => ({
+        classifications: withProposedType(r.classifications, typeKey, role, reason),
+        exclusions: r.exclusions,
+      }))) !== null,
+    [recompute],
+  )
+
   const setNorth = useCallback(
     async (angleDeg: number) => {
       const id = context.current.projectId
@@ -266,6 +296,8 @@ export function useEdgeRun({ projectId, getViewer, userNorth }: UseEdgeRunOption
     decideExclusion,
     setNorth,
     markExported,
+    proposeExclusion,
+    proposeClassification,
     elementsOf,
     contextIds,
     ensureSnapshot,

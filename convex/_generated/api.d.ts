@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
 import type * as classifications from "../classifications.js";
 import type * as exclusions from "../exclusions.js";
 import type * as packs from "../packs.js";
@@ -22,6 +23,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
   classifications: typeof classifications;
   exclusions: typeof exclusions;
   packs: typeof packs;

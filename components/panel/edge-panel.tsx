@@ -1,7 +1,7 @@
 'use client'
 
 import { Palette } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { type ReactNode, useCallback, useState } from 'react'
 import { CompassRose } from '@/components/panel/compass-rose'
 import { ConfirmationBlock } from '@/components/panel/confirmation-block'
 import { DesignInputs } from '@/components/panel/design-inputs'
@@ -39,6 +39,8 @@ export interface EdgePanelProps {
   onDecideExclusion?: (id: string, accept: boolean) => void
   onNorthChange?: (angleDeg: number) => void
   onExport?: () => void
+  /** The assistant section, docked under the results. */
+  assistant?: ReactNode
 }
 
 const noElements = () => []
@@ -57,6 +59,7 @@ export function EdgePanel({
   onDecideExclusion,
   onNorthChange,
   onExport,
+  assistant,
 }: EdgePanelProps) {
   const { viewer, isModelLoaded } = useViewer()
   // The selection belongs to one run, so a new run starts with nothing selected.
@@ -137,6 +140,7 @@ export function EdgePanel({
           </>
         ) : null}
       </ScrollArea>
+      {assistant}
       <footer className="border-t px-4 py-2 text-[11px] leading-snug text-muted-foreground">{messages.footer}</footer>
     </aside>
   )

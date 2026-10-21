@@ -30,6 +30,8 @@ export type LiveRun = {
 }
 
 const USER_REASON = 'Confirmed by the user'
+/** Below the confirm threshold, so an agent answer always waits for the person. */
+const AGENT_CONFIDENCE = 0.5
 
 /**
  * Rule proposals take the person's earlier decision by id: accepted ones arrive confirmed, rejected ones stay out.
@@ -55,6 +57,17 @@ export function withConfirmedType(classifications: Classification[], typeKey: st
   const confirmed: Classification = { typeKey, role, source: 'user', confidence: 1, reason: USER_REASON }
   const rest = classifications.filter((c) => c.typeKey !== typeKey)
   return [...rest, confirmed]
+}
+
+/** The agent's answer for a type: it turns pending with this role preselected until the person confirms. */
+export function withProposedType(classifications: Classification[], typeKey: string, role: ElementRole, reason: string): Classification[] {
+  const proposed: Classification = { typeKey, role, source: 'model', confidence: AGENT_CONFIDENCE, reason: `Agent: ${reason}` }
+  return [...classifications.filter((c) => c.typeKey !== typeKey), proposed]
+}
+
+/** Adds the exclusion unless one with the same id is already there, so a repeated proposal changes nothing. */
+export function withProposedExclusion(exclusions: Exclusion[], exclusion: Exclusion): Exclusion[] {
+  return exclusions.some((e) => e.id === exclusion.id) ? exclusions : [...exclusions, exclusion]
 }
 
 export function withDecision(exclusions: Exclusion[], id: string, accept: boolean): Exclusion[] {
