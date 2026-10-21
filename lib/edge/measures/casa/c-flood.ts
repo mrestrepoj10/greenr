@@ -21,7 +21,8 @@ export const C_FLOOD_LABELS = {
   entryMinusFlood: 'Entry level minus flood elevation',
 } as const
 
-const REQUIRED: ProjectInputKey[] = ['roadGradeM', 'floodElevationM', 'floodReturnYears']
+/** The counts need only the two elevations; the return period says which flood the elevation is, and CCRc4 reads it. */
+const REQUIRED: ProjectInputKey[] = ['roadGradeM', 'floodElevationM']
 
 /** A habitable floor at one elevation: a placed room, or, with no placed rooms, the units on one level. */
 type Space = { dbIds: number[]; z: number }
@@ -100,6 +101,18 @@ export const C_FLOOD: Measure = {
           message: 'No door has Function = Exterior, so the entry level for CCRc4 is not found.',
         })
       }
+    }
+
+    if (flood !== undefined && inputs.floodReturnYears === undefined) {
+      gaps.push({
+        id: 'C-FLOOD:return-period',
+        measure: 'C-FLOOD',
+        typeKey: '',
+        dbIds: [],
+        missing: 'Flood return period',
+        severity: 'info',
+        message: 'The flood elevation has no return period. CCRc4 measures against the 50-year flood elevation, 100-year inside a floodplain.',
+      })
     }
 
     const flags: MeasureFlag[] = []

@@ -66,13 +66,20 @@ describe('C-FLOOD', () => {
     expect(r.blockedBy).toEqual([
       { kind: 'missing-input', input: 'roadGradeM' },
       { kind: 'missing-input', input: 'floodElevationM' },
-      { kind: 'missing-input', input: 'floodReturnYears' },
     ])
     expect(value(r, L.lowest)?.value).toBe(0)
     expect(value(r, L.belowRoad)).toBeUndefined()
     const partial = C_FLOOD.compute(t.snapshot, t.classifications, [], { roadGradeM: 1 })
-    expect(partial.blockedBy?.map((b) => (b.kind === 'missing-input' ? b.input : b.kind))).toEqual(['floodElevationM', 'floodReturnYears'])
+    expect(partial.blockedBy?.map((b) => (b.kind === 'missing-input' ? b.input : b.kind))).toEqual(['floodElevationM'])
     expect(value(partial, L.belowRoad)?.value).toBe(1)
+  })
+
+  test('the two elevations unblock it; a missing return period is an information gap, not a blocker', () => {
+    const r = C_FLOOD.compute(t.snapshot, t.classifications, [], { roadGradeM: 1, floodElevationM: 1.5 })
+    expect(r.state).toBe('ok')
+    expect(r.blockedBy).toBeUndefined()
+    expect(r.gaps.map((g) => [g.missing, g.severity])).toEqual([['Flood return period', 'info']])
+    expect(value(r, L.atOrBelowFlood)?.value).toBe(1)
   })
 
   test('in a floodplain, a 50-year elevation is flagged against the 100-year rule', () => {

@@ -40,7 +40,7 @@ const lowest = flood.inputs.find((i) => i.label.startsWith('Lowest habitable flo
 const basement = snapshot.levels.find((l) => l.name === 'BLDG 1- BASEMENT FLR. FIN.').elevation
 check(Math.abs(lowest - basement) < 0.01, `the lowest habitable floor (${lowest.toFixed(3)} m) is the BLDG 1 basement level (${basement} m), not the model z of -20 m`)
 const bare = MEASURES['C-FLOOD'].compute(snapshot, classifications, accepted, {})
-check(bare.state === 'blocked' && bare.blockedBy.length === 3, 'C-FLOOD without elevations is blocked on 3 inputs')
+check(bare.state === 'blocked' && bare.blockedBy.length === 2, 'C-FLOOD without elevations is blocked on road grade and flood elevation')
 
 console.log('\n210 King, every CASA measure')
 const results = MEASURE_CODES.CASA.map((code) => MEASURES[code].compute(snapshot, classifications, accepted, inputs))
