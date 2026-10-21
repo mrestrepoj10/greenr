@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
-import { EdgeAgentSection } from '@/components/agent/edge-agent'
+import { DevTerminal, useDevHook, useDevMode } from '@/components/agent/dev-terminal'
+import { EdgeAgentSection, useGreenrTools } from '@/components/agent/edge-agent'
 import { EdgePanel } from '@/components/panel/edge-panel'
 import { phaseMessage, useEdgeRun } from '@/components/panel/use-edge-run'
 import { useExportPack } from '@/components/panel/use-export-pack'
@@ -50,7 +51,7 @@ function useProjectRow(model: BucketModel, viewableName: string | undefined) {
 }
 
 function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
-  const { getViewer, isModelLoaded } = useViewer()
+  const { viewer, getViewer, isModelLoaded } = useViewer()
   const project = useProjectRow(model, viewableName)
   const edge = useEdgeRun({
     projectId: project?._id ?? null,
@@ -65,6 +66,9 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
 
   const rows = run?.measures.find((m) => m.code === 'EEM01')?.orientations
   const pack = useExportPack({ edge, getViewer, model, colouring: colourOn && rows !== undefined })
+  const greenr = useGreenrTools(edge, getViewer)
+  const dev = useDevMode()
+  useDevHook(viewer, isModelLoaded, dev)
 
   return (
     <div className="flex h-dvh flex-col">
@@ -90,6 +94,7 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
               ghost={colourOn ? edge.contextIds : undefined}
               onClear={() => setColourOn(false)}
             />
+            {dev ? <DevTerminal greenr={greenr} /> : null}
           </ProjectViewer>
         </ResizablePanel>
         <ResizableHandle withHandle />
@@ -108,7 +113,7 @@ function Workspace({ model, viewableName }: ProjectWorkspaceProps) {
             onDecideExclusion={edge.decideExclusion}
             onNorthChange={edge.setNorth}
             onExport={pack.busy ? undefined : pack.exportPack}
-            assistant={<EdgeAgentSection edge={edge} getViewer={getViewer} slug={model.slug} />}
+            assistant={<EdgeAgentSection edge={edge} getViewer={getViewer} slug={model.slug} greenr={greenr} />}
           />
         </ResizablePanel>
       </ResizablePanelGroup>

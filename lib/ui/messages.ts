@@ -70,6 +70,10 @@ export const messages = {
     },
   },
   inputs: { title: 'Design inputs' },
+  dev: {
+    terminal: 'fx terminal, the assistant tools as viewer commands. Ctrl+` hides it.',
+    close: 'Close the terminal',
+  },
   agent: {
     title: 'Ask about this check',
     heading: 'greenr assistant',

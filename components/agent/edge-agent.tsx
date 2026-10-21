@@ -111,21 +111,31 @@ export function createGreenrTools(
   return { kit, registry }
 }
 
+export type GreenrTools = ReturnType<typeof createGreenrTools> & { broker: QuestionBroker }
+
+/** The tool registry for this page, built once; the tools read the latest run through a box the hook keeps current. */
+export function useGreenrTools(edge: EdgeRun, getViewer: () => APSViewer3D | null): GreenrTools {
+  const [box] = useState(() => new EdgeBox(edge))
+  useEffect(() => box.set(edge), [box, edge])
+  const [tools] = useState(() => {
+    const broker = new QuestionBroker()
+    return { ...createGreenrTools(getViewer, box.get, broker), broker }
+  })
+  useEffect(() => () => tools.kit.dispose(), [tools])
+  return tools
+}
+
 export interface EdgeAgentProps {
   edge: EdgeRun
   getViewer: () => APSViewer3D | null
   slug: string
+  greenr: GreenrTools
 }
 
 /** The assistant at the bottom of the EDGE panel: transcript with tool rows, inline questions, composer. */
-export function EdgeAgentSection({ edge, getViewer, slug }: EdgeAgentProps) {
-  const [box] = useState(() => new EdgeBox(edge))
-  useEffect(() => box.set(edge), [box, edge])
-
-  const [broker] = useState(() => new QuestionBroker())
-  const [{ kit, registry }] = useState(() => createGreenrTools(getViewer, box.get, broker))
+export function EdgeAgentSection({ edge, getViewer, slug, greenr }: EdgeAgentProps) {
+  const { kit, registry, broker } = greenr
   const tools = useMemo(() => ({ ...kit, tools: registry.asAgentTools(), instructions: '' }), [kit, registry])
-  useEffect(() => () => kit.dispose(), [kit])
 
   const model = useSyncExternalStore(modelChoice.subscribe, modelChoice.get, () => DEFAULT_AGENT_MODEL)
   const agent = useFxViewerAgent({
