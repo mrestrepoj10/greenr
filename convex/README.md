@@ -31,21 +31,25 @@ The split keeps a run under the 1 MB document limit when an orientation holds th
 
 ## Deploying
 
-Vercel builds with `pnpm build` only. No `CONVEX_DEPLOY_KEY` is set in Vercel, so functions are not pushed from the build. Before a production deploy, push them from a logged-in CLI:
+Two deployments back the app. Vercel preview reads the dev deployment `fantastic-salamander-425`, the same one `.env.local` points at. Vercel production reads the prod deployment `capable-boar-417`. `NEXT_PUBLIC_CONVEX_URL` holds each URL in its Vercel environment.
+
+Vercel builds with `pnpm build` only. No `CONVEX_DEPLOY_KEY` is set in Vercel, so a build never pushes functions. Push them from the logged-in CLI:
 
 ```sh
-npx convex deploy
+npx convex dev --once   # dev, read by preview and pnpm dev
+npx convex deploy       # prod, read by production
 ```
 
-For now Vercel preview and production both read `NEXT_PUBLIC_CONVEX_URL` from the dev deployment `fantastic-salamander-425`, the same one `.env.local` points at; it was set with `vercel env add NEXT_PUBLIC_CONVEX_URL production,preview`, the value piped from `.env.local`. Push functions there with `npx convex dev --once` before a deploy. Before a public launch, create the production deployment with `npx convex deploy`, then replace the variable in Vercel production with the URL it prints.
+Every push to `main` starts a Vercel production build. If a change alters a function's arguments, run `npx convex deploy` before production serves the new build, or the live page calls a function that prod does not have.
 
-`admin.resetProject` is an internal mutation, callable only from the deployment's CLI. The end-to-end check uses it to start 210 King from an empty project:
+`admin.resetProject` is an internal mutation, so only the deployment's CLI can call it. `scripts/verify/e2e.mjs` calls it first to start 210 King from an empty project, on the deployment behind `BASE_URL`. That is prod for `greenr-omega.vercel.app` or when `E2E_PROD=1`, and dev otherwise. To reset by hand:
 
 ```sh
-npx convex run admin:resetProject '{"slug":"<model slug>"}'
+npx convex run admin:resetProject '{"slug":"<model slug>"}'          # dev
+npx convex run --prod admin:resetProject '{"slug":"<model slug>"}'   # prod
 ```
 
-Verify the dev deployment end to end with:
+To verify the dev deployment's functions end to end, run:
 
 ```sh
 npx convex dev --once
