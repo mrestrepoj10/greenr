@@ -116,7 +116,7 @@ export type Element = {
   /** Outward normal in model coordinates, for walls and panels. */
   normal?: Vec3
   bbox?: Bbox
-  /** Host wall dbId for windows and doors, when it could be resolved. For curtain panels, the curtain wall that owns them. */
+  /** The curtain wall that owns a panel, window or door, from the instance tree. Windows in basic walls have none; the engine finds their host from geometry. */
   hostDbId?: number
   params: Record<string, number | string | null>
   /** Present on walls, curtain panels, windows and doors that have near-vertical faces. */
@@ -212,7 +212,7 @@ export type OrientationRow = {
   curtainWallAreaM2?: number
   windowAreaM2?: number
   doorAreaM2?: number
-  /** Glazed curtain panel area, the part of glazing that is not windows. */
+  /** Glazing inside curtain walls: glazed panels and windows set in them. Part of the curtain wall area, so not added to gross. */
   curtainGlazingAreaM2?: number
 }
 

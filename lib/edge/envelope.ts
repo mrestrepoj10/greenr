@@ -290,7 +290,13 @@ function probeOpening(
   const area = openingArea(element)
   const centre = bboxCentre(element)
   const own = element.facade
-  const host = own && centre ? findHost(centre, hosts, t) : null
+  const declared = element.hostDbId === undefined ? undefined : walls.get(element.hostDbId)
+  const host =
+    declared && centre
+      ? { wall: declared, along: centre[0] * declared.geom.u[0] + centre[1] * declared.geom.u[1] }
+      : own && centre
+        ? findHost(centre, hosts, t)
+        : null
   if (host && centre) {
     const hg = host.wall.geom
     const hw = (element.width || t.defaultOpeningWidthM) * t.openingProbeWidthShare

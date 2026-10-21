@@ -169,8 +169,17 @@ export async function readSnapshot(viewer: Autodesk.Viewing.Viewer3D, opts: Read
     }
   }
 
-  const curtainHosts = new Set(kept.filter((r) => CATEGORIES[r.category] === 'panel').map((r) => geo.parentOf(r.dbId)))
-  const elements = kept.map((row) => toElement(row, curtainHosts, geo))
+  const walls = new Set(kept.filter((r) => CATEGORIES[r.category] === 'wall').map((r) => r.dbId))
+  // Revit nests curtain panels, and windows or doors used as curtain panels, under their curtain wall.
+  const parents = new Map<number, number>()
+  for (const r of kept) {
+    const role = CATEGORIES[r.category]
+    if (role !== 'panel' && role !== 'window' && role !== 'door') continue
+    const parent = geo.parentOf(r.dbId)
+    if (walls.has(parent)) parents.set(r.dbId, parent)
+  }
+  const curtainHosts = new Set(parents.values())
+  const elements = kept.map((row) => toElement(row, curtainHosts, parents.get(row.dbId), geo))
   const t2 = performance.now()
 
   const node = model.getDocumentNode()
@@ -201,7 +210,12 @@ export async function readSnapshot(viewer: Autodesk.Viewing.Viewer3D, opts: Read
   }
 }
 
-function toElement(row: Row, curtainHosts: Set<number>, geo: ReturnType<typeof createGeometryReader>): Element {
+function toElement(
+  row: Row,
+  curtainHosts: Set<number>,
+  parentWall: number | undefined,
+  geo: ReturnType<typeof createGeometryReader>,
+): Element {
   const role = CATEGORIES[row.category]
   const p = row.p
   const family = row.typed ? (row.name ?? '') : undefined
@@ -223,7 +237,7 @@ function toElement(row: Row, curtainHosts: Set<number>, geo: ReturnType<typeof c
   if (num(p.Height) !== undefined) element.height = num(p.Height)
   if (num(p.Length) !== undefined) element.length = num(p.Length)
   element.bbox = geo.bbox(row.dbId)
-  if (role === 'panel') element.hostDbId = geo.parentOf(row.dbId)
+  if (parentWall !== undefined) element.hostDbId = parentWall
 
   const kind: FacadeKind | null =
     role === 'wall'

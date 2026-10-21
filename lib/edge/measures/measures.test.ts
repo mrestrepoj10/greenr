@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { box, classify, element, room, snapshotOf } from '../__fixtures__/synthetic'
+import { box, classify, element, facadeAlong, room, snapshotOf } from '../__fixtures__/synthetic'
 import { computeRun } from '../run'
 import { edgeRound } from '../storeys'
 import type { Classification, Element, MeasureCode, RunResult } from '../types'
@@ -36,6 +36,17 @@ describe('EEM01 arithmetic', () => {
     const r = MEASURES.EEM01.compute(snapshot, cls, []).orientations!.find((o) => o.orientation === 'N')!
     expect(r.glazingAreaM2).toBe(0)
     expect(r.wallAreaM2).toBeCloseTo(136, 9)
+  })
+
+  test('a window set in a curtain wall adds glazing but no gross area, since the curtain wall area already covers it', () => {
+    const { snapshot: s, classifications: c, ids } = box()
+    const g = facadeAlong('window', [0, 7], [0, 8.5], 4, 5.5, 0.05)
+    const cwWindow = element('Revit Windows', 'CW_SYS_PNL_WINDOW / CW', { width: 1.5, height: 1.5, facade: g.facade, bbox: g.bbox, hostDbId: ids.west.dbId })
+    const withWindow = { ...s, elements: [...s.elements, cwWindow] }
+    const west = MEASURES.EEM01.compute(withWindow, [...c, ...classify({ 'CW_SYS_PNL_WINDOW / CW': 'window' })], []).orientations!.find((o) => o.orientation === 'W')!
+    expect(west.wallAreaM2).toBeCloseTo(70, 9)
+    expect(west.glazingAreaM2).toBeCloseTo(40 + 2.25, 9)
+    expect(west.glazingDbIds).toContain(cwWindow.dbId)
   })
 
   test('a confirmed user exclusion drops the wall and the windows it hosts', () => {

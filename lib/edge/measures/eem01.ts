@@ -165,11 +165,13 @@ export function tallyFacade(snapshot: Snapshot, classifications: Classification[
     if (isCounted) {
       countedOpenings.add(op.element.dbId)
       const bucket = buckets[orientation]
+      // A curtain wall's Area already covers everything set in it, so its openings add glazing but no gross area.
+      const inCurtain = hostWall?.geom.kind === 'curtain-wall'
       if (role === 'door') {
-        bucket.doors += op.areaM2
+        if (!inCurtain) bucket.doors += op.areaM2
         bucket.wallDbIds.add(op.element.dbId)
       } else {
-        if (role === 'window') bucket.windows += op.areaM2
+        if (role === 'window' && !inCurtain) bucket.windows += op.areaM2
         else bucket.curtainGlazing += op.areaM2
         bucket.glazingDbIds.add(op.element.dbId)
         glazing.push({ dbId: op.element.dbId, typeKey: op.element.typeKey, areaM2: op.areaM2, orientation })
