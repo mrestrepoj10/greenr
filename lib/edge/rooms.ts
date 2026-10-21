@@ -24,10 +24,7 @@ export type RoomIndex = {
   bounds: PlanBounds
 }
 
-/**
- * Set to 1 by the snapshot reader on a room with no area and no level: Revit keeps a room that was deleted from
- * plan, or never placed, in the model. TORRE A has 73 rooms and all are unplaced.
- */
+/** Set to 1 by the snapshot reader on a room with no area and no level: Revit keeps rooms removed from plan, or never placed. */
 export const UNPLACED_PARAM = '__unplaced'
 
 const WET_ROOM = /ba[ñn]o|ducha|cocina|lavander|ropas|bath|kitchen|laundry|toilet/i

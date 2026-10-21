@@ -24,7 +24,7 @@ const MAIN_FACE_DOT = 0.95
  * exact 90 degree walls into 87 degree walls on 210 King. Null when the element has no near-vertical faces.
  *
  * Only windows that hold a non-empty bin are summed. An empty window sums to 0 and never wins, so the pick is the
- * one a full sweep makes, and TORRE A's 31,879 walls take about a tenth of the time.
+ * one a full sweep makes.
  */
 export function facadeOf(kind: FacadeKind, tris: Triangles): FacadeGeometry | null {
   const d = tris.data

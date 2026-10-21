@@ -36,7 +36,6 @@ const ENVELOPE_CATEGORIES = /Walls|Curtain Panels|Windows|Generic Models|Roofs|F
 // Categories outside the envelope settle as "other" by rule. Envelope types that match no rule stay leftovers for the decision model, so the regex is a negative lookahead rather than a catch-all.
 const NOT_ENVELOPE = new RegExp(`^(?!.*(?:${ENVELOPE_CATEGORIES.source}))`)
 
-/** Building services and site categories, each one role. */
 const CATEGORY_ROLES: [category: RegExp, role: ElementRole, reason: string][] = [
   [/Plumbing Fixtures/, 'plumbing-fixture', 'Revit Plumbing Fixtures category'],
   [/Lighting Fixtures/, 'lighting-fixture', 'Revit Lighting Fixtures category'],
