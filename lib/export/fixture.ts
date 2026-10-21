@@ -263,4 +263,5 @@ export const fixtureBothRun: RunResult = {
   schemes: ['EDGE', 'CASA'],
   inputs: { typology: 'vis', housingForm: 'multifamiliar', municipalityCategory: '1', climateZone: 'templado', floodReturnYears: 50, inFloodplain: false },
   measures: [...measures, ...casaMeasures],
+  dwellings: { count: 105, source: 'comments-tipo', bedrooms: [{ bedrooms: 1, units: 15 }, { bedrooms: 2, units: 45 }, { bedrooms: 3, units: 45 }] },
 }

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { box, element, facadeAlong, room, snapshotOf } from './__fixtures__/synthetic'
 import type { Element } from './types'
-import { deriveUnits, occupantsOf } from './units'
+import { deriveUnits, dwellingSummary, occupantsOf } from './units'
 
 const levels = [
   { name: 'L1', elevation: 3 },
@@ -99,5 +99,27 @@ describe('deriveUnits', () => {
 
   test('an office model has no dwelling units', () => {
     expect(deriveUnits(box().snapshot)).toEqual([])
+  })
+})
+
+describe('dwellingSummary', () => {
+  test('counts the units, names the rule and groups them by bedrooms, fewest first', () => {
+    const tipo = (t: string, bedrooms: number) => [
+      floor('Floor / Mortero de 0.05', 'L1', 50, t),
+      ...Array.from({ length: bedrooms }, () => floor('Floor / Habitación', 'L1', 10, t)),
+    ]
+    const units = deriveUnits(snapshotOf([...tipo('Tipo 1', 2), ...tipo('Tipo 2', 1), ...tipo('Tipo 3', 2)], levels))
+    expect(dwellingSummary(units)).toEqual({
+      count: 3,
+      source: 'comments-tipo',
+      bedrooms: [
+        { bedrooms: 1, units: 1 },
+        { bedrooms: 2, units: 2 },
+      ],
+    })
+  })
+
+  test('no unit gives a zero count and no rule', () => {
+    expect(dwellingSummary([])).toEqual({ count: 0, source: null, bedrooms: [] })
   })
 })

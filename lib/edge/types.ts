@@ -379,6 +379,18 @@ export type MeasureResult = {
   envelope?: { walls: WallEvidence[]; openings: OpeningEvidence[] }
 }
 
+/** How the dwelling units were found, in the order the rules are tried. The first rule that finds a unit wins. */
+export const UNIT_SOURCES = ['comments-tipo', 'room-number', 'department', 'areas'] as const
+export type UnitSource = (typeof UNIT_SOURCES)[number]
+
+/** The dwelling units CASA reads occupants and glazing by, counted once per run. `source` is null when no rule finds a unit. */
+export type DwellingSummary = {
+  count: number
+  source: UnitSource | null
+  /** Units per bedroom count, fewest bedrooms first. */
+  bedrooms: { bedrooms: number; units: number }[]
+}
+
 export type RunScope = {
   schemes: Scheme[]
   inputs: ProjectInputs
@@ -393,6 +405,8 @@ export type RunResult = RunScope & {
   classifications: Classification[]
   exclusions: Exclusion[]
   measures: MeasureResult[]
+  /** Present when the run measured CASA. */
+  dwellings?: DwellingSummary
   computedAt: string
 }
 

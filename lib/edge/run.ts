@@ -1,5 +1,6 @@
 import { GUIDE_VERSIONS } from './guide'
 import { runMeasures } from './measures'
+import { deriveUnits, dwellingSummary } from './units'
 import { SCHEMES, type Classification, type Exclusion, type RunResult, type RunScope, type Snapshot } from './types'
 
 function fnv1a(s: string): string {
@@ -50,6 +51,7 @@ export function computeRun(
     classifications,
     exclusions,
     measures,
+    ...(schemes.includes('CASA') ? { dwellings: dwellingSummary(deriveUnits(snapshot)) } : {}),
     computedAt: now,
   }
 }

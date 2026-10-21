@@ -178,6 +178,12 @@ export const storedMeasure = v.object({
   flags: v.optional(v.array(measureFlag)),
 })
 
+export const dwellingSummary = v.object({
+  count: v.number(),
+  source: v.union(literals(['comments-tipo', 'room-number', 'department', 'areas'] as const), v.null()),
+  bedrooms: v.array(v.object({ bedrooms: v.number(), units: v.number() })),
+})
+
 export const runSnapshot = v.object({
   modelUrn: v.string(),
   viewableGuid: v.string(),
@@ -195,6 +201,7 @@ export const runFields = {
   inputs: projectInputs,
   snapshot: runSnapshot,
   measures: v.array(storedMeasure),
+  dwellings: v.optional(dwellingSummary),
   computedAt: v.string(),
   elementCount: v.number(),
 }

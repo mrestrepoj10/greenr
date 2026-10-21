@@ -23,6 +23,8 @@ describe('run codec', () => {
     const env = run.measures.find((m) => m.code === 'C-ENV')!
     expect(env.blockedBy).toEqual([{ kind: 'unplaced-rooms', count: 73, total: 73 }])
     expect(env.pendingExclusionIds).toEqual(['excl-p1'])
+    expect(run.dwellings).toEqual(fixtureBothRun.dwellings)
+    expect('dwellings' in toStoredRun(fixtureRun).run).toBe(false)
   })
 
   it('stores the schemes, the guide versions, the project inputs and why a measure is blocked', () => {

@@ -2,11 +2,7 @@ import { roomsEitherSide } from './casa/openings'
 import { isBedroomName, isOutdoorRoomName } from './casa/room-names'
 import { text } from './params'
 import { roomIndexOf, roomName } from './rooms'
-import type { Element, Snapshot } from './types'
-
-/** How the dwelling units were found, in the order the rules are tried. The first rule that finds a unit wins. */
-export const UNIT_SOURCES = ['comments-tipo', 'room-number', 'department', 'areas'] as const
-export type UnitSource = (typeof UNIT_SOURCES)[number]
+import { UNIT_SOURCES, type DwellingSummary, type Element, type Snapshot, type UnitSource } from './types'
 
 export type Unit = {
   key: string
@@ -152,6 +148,16 @@ const RULES: Record<UnitSource, (snapshot: Snapshot) => Draft[]> = {
 }
 
 const cache = new WeakMap<Snapshot, Unit[]>()
+
+export function dwellingSummary(units: Unit[]): DwellingSummary {
+  const byBedrooms = new Map<number, number>()
+  for (const u of units) byBedrooms.set(u.bedrooms, (byBedrooms.get(u.bedrooms) ?? 0) + 1)
+  return {
+    count: units.length,
+    source: units[0]?.source ?? null,
+    bedrooms: [...byBedrooms].sort((a, b) => a[0] - b[0]).map(([bedrooms, count]) => ({ bedrooms, units: count })),
+  }
+}
 
 /** The dwelling units of a residential model, by the first rule in `UNIT_SOURCES` that finds any. Empty when none does. */
 export function deriveUnits(snapshot: Snapshot): Unit[] {

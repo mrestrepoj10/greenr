@@ -96,6 +96,7 @@ export function toStoredRun(run: RunResult): StoredRunBundle {
       inputs: run.inputs,
       snapshot: run.snapshot,
       measures,
+      ...(run.dwellings === undefined ? {} : { dwellings: run.dwellings }),
       computedAt: run.computedAt,
       elementCount,
     },
@@ -158,6 +159,7 @@ export function fromStoredRun(
     classifications: classifications.map(fromClassificationRow),
     exclusions: exclusions.map(fromExclusionRow),
     measures,
+    ...(doc.dwellings === undefined ? {} : { dwellings: doc.dwellings }),
     computedAt: doc.computedAt,
   }
 }
