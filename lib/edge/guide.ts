@@ -32,14 +32,17 @@ const casa = (page: number, title: string): GuideRef => ({
   url: `${CASA_PDF}#page=${page + 1}`,
 })
 
-/** The Minvivienda scans have no cover: "Página 7 de 15" is PDF page 7. */
-const minvivienda = (file: string, doc: string, page: number, title: string): GuideRef => ({
+/** The resolution scan has no cover: "Página 7 de 15" is PDF page 7. Anexo 3 prints 40 on PDF page 43, so it passes its offset. */
+const minvivienda = (file: string, doc: string, page: number, title: string, pdfOffset = 0): GuideRef => ({
   doc,
   version: RES_0194_EDITION,
   page: String(page),
   title,
-  url: `${MINVIVIENDA}/${file}#page=${page}`,
+  url: `${MINVIVIENDA}/${file}#page=${page + pdfOffset}`,
 })
+
+const ANEXO_3 = 'anexo-3-mecanismo-de-seguimiento-y-control_0.pdf'
+const anexo3 = (page: number, title: string): GuideRef => minvivienda(ANEXO_3, 'Res. 0194 Anexo 3 (MS&C)', page, title, 3)
 
 export const GUIDE: Record<MeasureCode, GuideRef> = {
   'D-GIA': edge(2, 20, 'Building Data: Gross Internal Area (IPMS 2)'),
@@ -50,14 +53,30 @@ export const GUIDE: Record<MeasureCode, GuideRef> = {
   EEM02: edge(3, 16, 'EEM02 Reflective Roof'),
   EEM09: edge(3, 43, 'EEM09 Efficiency of Glass'),
   'AU-SKYLIGHT': edge(3, 97, 'EEM25 Skylights: mandatory when skylights cover 1% or more of the roof area'),
-  'C-ENV': casa(30, 'GGc5 Estudio bioclimático: window-to-wall ratio per main façade'),
-  'C-FLOOD': casa(68, 'CCRp3 Resiliencia del proyecto: lowest habitable floor at or above road grade'),
-  'C-VENT': casa(172, 'SBp1 Calidad del aire interior: natural ventilation opening per room'),
-  'C-WATER': casa(124, 'Ap3 Reducción del consumo de agua interior: fixture flows against NTC 1500'),
-  'C-FLEX': casa(236, 'Mc4 Circularidad: share of non-structural interior partitions'),
+  'C-ENV': casa(31, 'GGc5 Estudio bioclimático: window-to-wall ratio of each main façade'),
+  'C-FLOOD': casa(69, 'CCRp3 Tabla 12: lowest occupied floor at or above road grade'),
+  'C-VENT': casa(172, 'SBp1 Caso A: useful opening above 4% of each space\'s floor area'),
+  'C-WATER': casa(125, 'Ap3 Tabla 28: NTC 1500 maximum fixture flows'),
+  'C-FLEX': casa(236, 'Mc4 Alternativa b: non-structural partitions and 2.40 m between slabs'),
   'C-SRI': casa(94, 'BEc3 Preservación del microclima urbano: roof SRI by slope'),
-  'C-GLAZE': casa(202, 'SBc6 Desempeño de la iluminación interior: glazing visible light transmittance'),
+  'C-GLAZE': casa(204, 'SBc6 Opción 2 Alternativa 1: glazing visible light transmittance above 40%'),
 }
+
+/** The page of each CASA credit a measure feeds, at the paragraph that sets its number. Printed pages, checked against the PDF text. */
+export const CASA_CREDITS = {
+  GGc5: casa(31, 'GGc5 Estudio bioclimático: window-to-wall ratio of each of the 4 main façades'),
+  GGp8: casa(48, 'GGp8 Gestión de residuos: inhabitants per dwelling are bedrooms plus one, in every calculation'),
+  CCRp3: casa(69, 'CCRp3 Tabla 12: lowest occupied floor at or above road grade; 100-year study in a floodplain'),
+  CCRc4: casa(76, 'CCRc4 Tabla 15: entry level, habitable spaces and openings above the 50-year flood elevation (100 in a floodplain)'),
+  BEc3: casa(94, 'BEc3: roof SRI above 32 when steeper than 9.5°, above 64 at 9.5° or less'),
+  Ap3: casa(124, 'Ap3 Tabla 27: minimum water saving by climate zone'),
+  'Ap3 Tabla 28': casa(125, 'Ap3 Tabla 28: NTC 1500 maximum flows and flushes'),
+  Ep1: casa(153, 'Ep1 Opción 2: prescriptive envelope, elements next to dwellings only'),
+  SBp1: casa(172, 'SBp1 Caso A: useful opening above 4% of each space\'s floor area'),
+  SBp3: casa(190, 'SBp3: wall-to-window ratio for each orientation'),
+  SBc6: casa(204, 'SBc6 Opción 2 Alternativa 1: glazing at least 15% of each unit\'s floor area, VLT above 40%'),
+  Mc4: casa(236, 'Mc4 Alternativa b: over 50% of partition wall area non-structural, at least 2.40 m between slabs'),
+} satisfies Record<string, GuideRef>
 
 export const SKYLIGHT_AUDIT_GUIDE: GuideRef = edge(
   8,
@@ -68,8 +87,21 @@ export const SKYLIGHT_AUDIT_GUIDE: GuideRef = edge(
 export const RES_0194 = {
   climateZone: minvivienda('0194-2025.pdf', 'Resolución 0194 de 2025', 7, 'Art. 5 Zonificación climática: Anexo 2 and the geovisor place the site'),
   municipalities: minvivienda('anexo-2-informacion-climatica-por-municipios.pdf', 'Res. 0194 Anexo 2', 1, 'Información climática por municipios'),
-  msc: minvivienda('anexo-3-mecanismo-de-seguimiento-y-control_0.pdf', 'Res. 0194 Anexo 3 (MS&C)', 43, 'MS&C form §2 Materialidad y forma: window-to-wall ratio per façade'),
+  msc: anexo3(40, 'MS&C form §2 Materialidad y forma: window-to-wall ratio per façade'),
+  mscMeasures: anexo3(41, 'MS&C form §3 Medidas: solar protection glass and roof, low-flow fixtures'),
 } satisfies Record<string, GuideRef>
+
+/** The MS&C web form's fields as Anexo 3 §7.2 numbers and explains them, by printed page. */
+export const MSC_PAGES = {
+  21: anexo3(21, 'MS&C §7.2 fields 1 to 10: project type, climate zone, built area'),
+  22: anexo3(22, 'MS&C §7.2 fields 11 to 15: floors above and below ground, building height'),
+  23: anexo3(23, 'MS&C §7.2 fields 16 and 17: average floor-to-floor and floor-to-ceiling heights'),
+  24: anexo3(24, 'MS&C §7.2 fields 18 and 19: building form and footprint'),
+  25: anexo3(25, 'MS&C §7.2 fields 20 and 21: exterior wall material and U value'),
+  27: anexo3(27, 'MS&C §7.2 field 24: roof U value'),
+  28: anexo3(28, 'MS&C §7.2 fields 25 to 27: window-to-wall ratio per façade, average window height, window type'),
+  29: anexo3(29, 'MS&C §7.2 fields 28 and 29: shading devices, expected occupants'),
+} satisfies Record<number, GuideRef>
 
 export const CLIMATE_GEOVISOR_URL =
   'https://geoportal.minvivienda.gov.co/portal/apps/instant/interactivelegend/index.html?appid=f1381a0031e14ec8957fe8c9ef017054'
